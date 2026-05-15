@@ -21,7 +21,7 @@
 import argparse
 
 #import placeholder functions for future logic
-from tasks.file_sorter import move_files
+from tasks.file_sorter import scan_directory
 from tasks.report_generator import generate_report
 
 def main():
@@ -49,7 +49,8 @@ def main():
 
     # Route to placeholder functions based on task
     if args.task == "move":
-        move_files(args.path)
+        result = scan_directory(args.path)
+        print(f"Scan result: {result}")
 
     elif args.task == "report":
         generate_report(args.path)

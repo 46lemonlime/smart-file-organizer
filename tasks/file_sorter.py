@@ -11,6 +11,11 @@ def move_files(path):
     #2. Print the list of items (files and folders)
     print("Items found in the directory:")
     for item in items:
-        print(f"- {item}")
+        full_path = os.path.join(path, item)
+        if os.path.isdir(full_path):
+            print(f"- directory: {item}")
+        elif os.path.isfile(full_path):
+            print(f"- file: {item}")
+
     print(f"[PHASE 1] move_files called with path: {path}")
     print("[PHASE 1] Not implemented yet.")

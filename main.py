@@ -1,64 +1,72 @@
-#Phase 1: SKELETON (No real logic yet)
-#Goal: CanI run the program end to end without errors?
-'''
-1. main.py
-- CLI input works (task, path)
-- prints received argumetns
-- routes to a placeholder function for the task
-+ no file moving yet
-+ no config yet
-+ no reports yet
-'''
-#Phase 2: 
-#Goal: “Can I see what exists in a folder?”
-'''
-2. tasks/file_sorter.py
-- Scan directory
-- Return list of files
-- Print or log them
-'''
-#import necessary libraries
+# Import required libraries
 import argparse
 
-#import placeholder functions for future logic
-from tasks.file_sorter import scan_directory
+# Import the core logic from tasks module
+from tasks.file_sorter import scan_and_classify
 from tasks.report_generator import generate_report
 
 def main():
-    # Set up argument parser
-    parser = argparse.ArgumentParser(description="File management tool")
+    """
+    Entry point of the Smart File Organizer CLI tool.
 
+    Responsibilities:
+    - Parse command line arguments
+    - Route task to the correct module
+    - Display results
+    """
+
+    # -----------------------------
+    # 1. Set up CLI argument parser
+    # -----------------------------
+    parser = argparse.ArgumentParser(description="Smart File Organizer CLI Tool")
+
+    # Task to perform (e.g. move, report)
     parser.add_argument(
         "task",
         type=str,
-        help="Task to perform (e.g., move, report)"
+        help="Task to perform (currently supported: move, report)"
     )
 
+    # Path to target directory
     parser.add_argument(
         "path",
         type=str,
-        help="Path to the directory or file"
+        help="Path to the directory to process"
     )
 
-    # Parse arguments
+    # -----------------------------
+    # 2. Parse arguments from CLI
+    # -----------------------------
     args = parser.parse_args()
 
-    # Print received arguments (debug visibility)
+    # Debug output to confirm input values
     print(f"Received task: {args.task}")
     print(f"Received path: {args.path}")
 
-    # Route to placeholder functions based on task
-    if args.task == "move":
-        result = scan_directory(args.path)
-        print(f"Scan result: {result}")
+    # -----------------------------
+    # 3. Route tasks
+    # -----------------------------
 
+    # Phase 3.5: scan + classify files
+    if args.task == "move":
+        result = scan_and_classify(args.path)
+
+        # Display structured output
+        print("\nResult:")
+        print(result)
+
+    # Placeholder for future feature
     elif args.task == "report":
         generate_report(args.path)
 
+    # Handle invalid task input
     else:
-        print("[ERROR] Unknown task.")
+        print("[ERROR] Unknown task provided.")
         print("Available tasks: move, report")
 
 
+# -----------------------------
+# 4. Entry point guard
+# -----------------------------
 if __name__ == "__main__":
     main()

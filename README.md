@@ -5,6 +5,35 @@ This project aims to automate common file management tasks such as sorting files
 
 ---
 
+## 👤 Author
+
+**46lemonlime**
+GitHub: https://github.com/46lemonlime
+
+Creator, developer, and maintainer of this project.
+
+---
+
+## 📦 Version
+
+Current version: v0.1.0
+
+---
+
+## 📝 Changelog
+
+### v0.1.0
+- Initial project setup
+- CLI interface implemented (task + path arguments)
+- Basic task routing system in `main.py`
+- File scanning implemented (lists directory contents)
+- Modular structure introduced:
+  - `tasks/file_sorter.py`
+  - `tasks/report_generator.py` (placeholder)
+- macOS permission handling noted in documentation
+
+---
+
 ## 🚀 Features (Current)
 
 * CLI interface to run tasks from the terminal

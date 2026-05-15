@@ -213,3 +213,4 @@ Smart File Organizer is being developed as a portfolio project to demonstrate Py
 GitHub: https://github.com/46lemonlime
 
 Creator, developer, and maintainer of this project.
+

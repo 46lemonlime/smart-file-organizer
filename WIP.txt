@@ -1,0 +1,18 @@
+Phase 5 v0.3.0
+Implemented:
+- /utils/logger.py
+- connected logger.py to main and coded the logic for safe usage even when log foulder not found
+- updated main.py with loggin wiring 
+- updated file_sorter.py with logging wiring
+- updated file_mover.py with logging wiring
+- standardise logging format by improving the API and auto detecting the module the log is coming from.
+- validating input before logging in main.py
+- normalised logs from main: [__MAIN__] -> [MAIN]
+- add execution trace completeness by using session IDs in logger.py
+- improve error visibility, capturing the actual error and logging it
+- update README.md to reflect the new implementations
+
+to be implemented:
+
+version polishing:
+- reduce log noise by not logging per-file in the file_mover.py

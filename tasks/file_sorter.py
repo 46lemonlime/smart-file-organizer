@@ -1,31 +1,59 @@
 #Import necessary libraries
 import os
 
+#import modules from the project
+from utils.logger import log_info, log_warning, log_error
+
+# -----------------------------
+# Helper: Detect hidden files
+# -----------------------------
+def is_hidden_file(filename):
+    """
+    Determines whether a file should be considered hidden.
+
+    In this project, hidden files are defined as:
+    - Files starting with '.' (Unix/macOS convention)
+
+    These are excluded from processing to avoid:
+    - system files (.DS_Store)
+    - environment files (.env)
+    - git metadata (.gitignore, .git)
+    """
+
+    return filename.startswith(".")
+
 # -----------------------------
 # Classify a single file
 # -----------------------------
 def classify_file(filename):
     """
-    Returns a category based on file extension.
-    Used in Phase 3.5 to group files logically.
+    Assigns a category to a file based on its extension.
+
+    This is used to group files into logical folders
+    during the organization phase.
+
+    Categories:
+    - images
+    - documents
+    - videos
+    - others (fallback group)
     """
 
-    # Extract file extension in lowercase
     ext = os.path.splitext(filename)[1].lower()
 
-    # Image files
+    # Image formats
     if ext in [".png", ".jpg", ".jpeg", ".gif", ".webp"]:
         return "images"
 
-    # Document files
-    elif ext in [".pdf", ".docx", ".txt", ".md"]:
+    # Document formats (including archives for now)
+    elif ext in [".pdf", ".docx", ".txt", ".md", ".zip"]:
         return "documents"
 
-    # Video files
+    # Video formats
     elif ext in [".mp4", ".mov", ".avi", ".mkv"]:
         return "videos"
 
-    # Everything else
+    # Fallback category for unknown or unsupported types
     else:
         return "others"
 
@@ -35,14 +63,30 @@ def classify_file(filename):
 # -----------------------------
 def scan_and_classify(path):
     """
-    Phase 3.5:
-    Scans a directory and returns a structured classification of its contents.
+    Scans a directory and builds a structured representation
+    of its contents.
+
+    This is the FIRST stage of the pipeline:
+
+        1. Read directory contents
+        2. Filter unwanted files (hidden/system)
+        3. Classify files by type
+        4. Separate directories from files
+
+    Output format:
+    {
+        images: [...],
+        documents: [...],
+        videos: [...],
+        others: [...],
+        directories: [...]
+    }
     """
 
     # Debug message to confirm which directory is being scanned
-    print(f"Scanning directory: {path}")
+    log_info(f"Starting scan for: {path}")
 
-    # Final structured result
+    # Final structured result used by downstream processing
     result = {
         "images": [],
         "documents": [],
@@ -51,113 +95,61 @@ def scan_and_classify(path):
         "directories": []
     }
 
+    # Counter for logging skipped hidden files
+    skipped_hidden = 0
+
     try:
-        # Get all items in the directory
+        # Retrieve raw directory contents and log the count
         items = os.listdir(path)
+        log_info(f"Items found: {len(items)}")
+        
+        # Edge case: Empty directory (log a warning but continue gracefully)
+        if not items:
+            log_warning(f"Directory is empty: {path}")
 
     except Exception as e:
         # Handle permission or invalid path errors
-        print(f"[ERROR] Cannot access directory: {e}")
+        log_error(f"Cannot access directory: {path} | Error: {e}")
         return None
 
-    # Process each item in the folder
+    # -------------------------------------------------
+    # ITEM PROCESSING LOOP
+    # -------------------------------------------------
     for item in items:
+    
+        # STEP 1: Filter hidden files early
+        # (prevents unnecessary processing)
+        if is_hidden_file(item):
+            skipped_hidden += 1
+            continue
 
         # Build full path
         full_path = os.path.join(path, item)
 
-        # If it's a directory
+        # STEP 2: Identify directories
         if os.path.isdir(full_path):
             result["directories"].append(item)
 
-        # If it's a file
+        # STEP 3: Identify and classify regular files
         elif os.path.isfile(full_path):
             category = classify_file(item)
             result[category].append(item)
 
-        # Ignore anything else (symlinks, system artifacts, etc.)
+        # STEP 4: Handle unexpected item types (e.g. symbolic links, sockets)
         else:
-            pass
+            log_warning(f"Skipping unsupported item type: {full_path}")
+
+    # -------------------------------------------------
+    # FINAL SUMMARY LOG
+    # -------------------------------------------------
+    log_info(
+        f"Scan complete | "
+        f"images: {len(result['images'])}, "
+        f"documents: {len(result['documents'])}, "
+        f"videos: {len(result['videos'])}, "
+        f"others: {len(result['others'])}, "
+        f"directories: {len(result['directories'])}, "
+        f"hidden skipped: {skipped_hidden}"
+    )
 
     return result
-
-'''
-#Previous version of move_files (Phase 3)
-
-
-def scan_directory(path):
-    """
-    Phase 3:
-    Scans a directory and returns structured data about its contents.
-
-    Output format:
-    {
-        "files": [...],
-        "directories": [...]
-    }
-    """
-
-    # Debug message to confirm which directory is being scanned
-    print(f"Scanning directory: {path}")
-
-    # Lists to store results separately
-    files = []
-    directories = []
-
-    try:
-        # Retrieve all items (files, folders, etc.) in the given path
-        items = os.listdir(path)
-
-    except Exception as e:
-        # Handle cases where the directory cannot be accessed
-        print(f"[ERROR] Cannot access directory: {e}")
-        return None
-
-    # Iterate through each item found in the directory
-    for item in items:
-
-        # Build the full path of the item
-        full_path = os.path.join(path, item)
-
-        # Check if item is a directory
-        if os.path.isdir(full_path):
-            directories.append(item)
-
-        # Check if item is a file
-        elif os.path.isfile(full_path):
-            files.append(item)
-
-        # Catch-all for anything else (symlinks, system artifacts, etc.)
-        else:
-            # For Phase 3 we ignore these, but keep structure for future expansion
-            pass
-
-    # Return structured data for use in later phases (classification, reports, etc.)
-    return {
-        "files": files,
-        "directories": directories
-    }
-
-'''
-'''
-#Previous version of move_files (Phase 2)
-
-def move_files(path):
-    #This function will eventually contain the logic to move files based on configuration rules.
-    print(f"Scanning directory: {path}")
-
-    #1. Get everything inside the folder
-    items = os.listdir(path)
-
-    #2. Print the list of items (files and folders)
-    print("Items found in the directory:")
-    for item in items:
-        full_path = os.path.join(path, item)
-        if os.path.isdir(full_path):
-            print(f"- directory: {item}")
-        elif os.path.isfile(full_path):
-            print(f"- file: {item}")
-
-    print(f"[PHASE 1] move_files called with path: {path}")
-    print("[PHASE 1] Not implemented yet.")
-'''

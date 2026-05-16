@@ -2,6 +2,8 @@
 import os
 import shutil
 
+#import modules from the project
+from utils.logger import log_info, log_warning, log_error
 
 # -------------------------------------------------
 # Configuration (temporary - will move to config.yaml)
@@ -11,14 +13,13 @@ PREFIX = "smartorg"
 
 def move_files(path, classified_data):
     """
-    Phase 4: File moving engine
-
+    File moving engine
     Takes classified file structure and physically
     organizes files into prefixed folders inside the
     target directory.
     """
 
-    print(f"\n[PHASE 4] Organizing files in: {path}")
+    log_info(f"Organizing files in: {path}")
 
     # -------------------------------------------------
     # Iterate through classified categories
@@ -43,7 +44,7 @@ def move_files(path, classified_data):
         # Create folder if it doesn't exist
         if not os.path.exists(destination_folder):
             os.makedirs(destination_folder)
-            print(f"[CREATE] Folder created: {folder_name}")
+            log_info(f"[CREATE] Folder created: {folder_name}")
 
         # -------------------------------------------------
         # Move each file into its category folder
@@ -57,9 +58,14 @@ def move_files(path, classified_data):
             # Safety check: ensure file still exists
             if os.path.exists(source_path):
 
-                # Move file
-                shutil.move(source_path, destination_path)
-                print(f"[MOVE] {file} → {folder_name}/")
+                try:
+                    shutil.move(source_path, destination_path)
+                    log_info(f"Moved file: {file} → {folder_name}/")
+
+                except Exception as e:
+                    log_error(f"Failed to move {file}: {e}")
 
             else:
-                print(f"[WARNING] File not found: {file}")
+                log_warning(f"File not found during move: {file}")
+        
+    log_info("File move process completed")

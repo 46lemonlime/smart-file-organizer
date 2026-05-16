@@ -1,4 +1,4 @@
-# Smart File Organizer (v0.2.0)
+# Smart File Organizer (v0.3.0)
 
 A Python CLI tool that organizes files in a directory by scanning, classifying, and moving them into structured folders.
 
@@ -33,7 +33,12 @@ Smart File Organizer is a lightweight CLI automation tool for cleaning and struc
   - `file_sorter.py` → scanning & classification  
   - `file_mover.py` → file system operations  
   - `report_generator.py` → placeholder (future feature)  
-* Task-based routing system via `main.py`  
+* Structured logging system with:
+   - timestamped logs
+   - log levels (INFO / WARN / ERROR)
+   - module attribution (MAIN, FILE_SORTER, FILE_MOVER, LOGGER)
+* Execution trace visibility for debugging workflows
+* Task-based routing system via main.py
 * Cross-platform design (macOS / Windows compatible)
 
 ---
@@ -41,7 +46,8 @@ Smart File Organizer is a lightweight CLI automation tool for cleaning and struc
 ## 3. 🧱 Architecture (Design & Structure)
 ### 🧩 Design Principles
 * Separation of concerns
-* Modular architecture
+* Modular architecture with internal logging
+* Parent modules only logging lifecycle events
 * CLI-first design
 * Cross-platform compatibility (macOS & Windows)
 * Safe filesystem operations (basic validation)
@@ -53,14 +59,17 @@ smart-file-organizer/
 │
 ├── main.py
 ├── config.yaml (future)
-├── logs/ (future)
+├── logs/
+│   └── smartorg.log
 │
 ├── tasks/
-│ ├── file_sorter.py
-│ ├── file_mover.py
-│ ├── report_generator.py (placeholder for the moment)
+│   ├── file_sorter.py
+│   ├── file_mover.py
+│   ├── report_generator.py (placeholder)
 │
-├── utils/ (future)
+├── utils/
+│   └── logger.py
+│
 ├── README.md
 └── requirements.txt
 ```
@@ -72,13 +81,13 @@ smart-file-organizer/
 ```md
 CLI Input
    ↓
-main.py (router)
+main.py (lifecycle logging only)
    ↓
-scan_and_classify()
+scan_and_classify() → FILE_SORTER logs internally
    ↓
-move_files()
+move_files() → FILE_MOVER logs internally
    ↓
-File system organization applied
+File system organized
 ```
 
 #### report task
@@ -147,10 +156,9 @@ Smart File Organizer is being developed as a portfolio project to demonstrate Py
 
 - Clean and maintainable structure
 - Separation of concerns (sorting, moving, reporting)
-- Modular and scalable architecture
-- Real-world usability for personal file management
-- Incremental development with stable milestones
-- Future-proof design for configuration and extensibility
+- Module-level responsibility for logging
+- Scalable architecture for future configuration system
+- Real-world usability for file system automation
 
 ### 🧭 Roadmap
 
@@ -165,9 +173,10 @@ Smart File Organizer is being developed as a portfolio project to demonstrate Py
  * [x] Basic task routing system
 
 #### v0.3.0 (Stability & Observability)
- * [ ] Logging system (track actions and errors)
- * [ ] Improved CLI output formatting
- * [ ] Better error handling and validation
+* [x] Structured logging system
+* [x] Module-based log ownership
+* [x] Execution trace improvements
+* [x] Hidden file filtering
 
 #### v0.4.0 (Configuration Layer)
  * [ ] Config-driven rules (config.yaml)
@@ -182,18 +191,24 @@ Smart File Organizer is being developed as a portfolio project to demonstrate Py
  * [ ] Fully documented CLI tool
  * [ ] Production-ready structure
 
-### 🚧 Current Limitations (v0.2.0)
+### 🚧 Current Limitations (v0.3.0)
 
 - No configuration file (settings are currently hardcoded)
 - No dry-run mode
-- No logging system
 - No undo functionality
-- Limited file type classification rules
+- Basic classification rules only
 - Report generator not implemented yet
 ---
 
 ## 6. 📜 Version History
-[v0.2.0] - Current
+[v0.3.0] (Current)
+* Introduced structured logging system
+* Implemented module-level log ownership
+* Improved execution trace visibility
+* Fixed hidden file handling in scanning logic
+* Standardized workflow logging patterns
+
+[v0.2.0]
 * Implemented full scanning, classification, and file moving pipeline
 * Introduced modular architecture with task-based structure
 * Added prefixed folder system (smartorg-*)

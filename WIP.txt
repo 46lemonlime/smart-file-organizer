@@ -1,18 +1,16 @@
 Phase 5 v0.3.0
-Implemented:
-- /utils/logger.py
-- connected logger.py to main and coded the logic for safe usage even when log foulder not found
-- updated main.py with loggin wiring 
-- updated file_sorter.py with logging wiring
-- updated file_mover.py with logging wiring
-- standardise logging format by improving the API and auto detecting the module the log is coming from.
-- validating input before logging in main.py
-- normalised logs from main: [__MAIN__] -> [MAIN]
-- add execution trace completeness by using session IDs in logger.py
-- improve error visibility, capturing the actual error and logging it
-- update README.md to reflect the new implementations
+implemented:
 
 to be implemented:
+- config.yaml design
+- config_loader.py
+- add configurable hidden file handling
+- update file_sorter
+- update file_mover
+- add dry-run support
+- improve logging context (session IDs)
+
 
 version polishing:
 - reduce log noise by not logging per-file in the file_mover.py
+- optional refactor: project structure cleanup

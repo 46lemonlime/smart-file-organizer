@@ -166,13 +166,13 @@ Smart File Organizer is being developed as a portfolio project to demonstrate Py
  * [x] CLI interface (basic skeleton)
  * [x] Project structure setup
 
-#### v0.2.0 (Current - Core Automation)
+#### v0.2.0 (Core Automation)
  * [x] Directory scanning
  * [x] File classification (by type)
  * [x] File moving / organization (smartorg-* folders)
  * [x] Basic task routing system
 
-#### v0.3.0 (Stability & Observability)
+#### v0.3.0 (Current - Stability & Observability)
 * [x] Structured logging system
 * [x] Module-based log ownership
 * [x] Execution trace improvements

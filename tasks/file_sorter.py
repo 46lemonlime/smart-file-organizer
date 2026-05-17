@@ -1,92 +1,112 @@
-#Import necessary libraries
+# -------------------------------------------------
+# IMPORTS
+# -------------------------------------------------
+# Import standard library dependencies
 import os
 
-#import modules from the project
+# Import internal project modules
 from utils.logger import log_info, log_warning, log_error
+from utils.config_loader import get_config
 
-# -----------------------------
-# Helper: Detect hidden files
-# -----------------------------
-def is_hidden_file(filename):
+
+# -------------------------------------------------
+# HELPER: Detect hidden files (config-aware)
+# -------------------------------------------------
+def is_hidden_file(filename, ignore_hidden: bool):
     """
-    Determines whether a file should be considered hidden.
+    Determines whether a file should be treated as hidden.
 
-    In this project, hidden files are defined as:
-    - Files starting with '.' (Unix/macOS convention)
+    Hidden files are ignored when enabled in configuration,
+    and typically include system or metadata files such as:
 
-    These are excluded from processing to avoid:
-    - system files (.DS_Store)
-    - environment files (.env)
-    - git metadata (.gitignore, .git)
+    - .DS_Store (macOS system file)
+    - .env (environment configuration)
+    - .gitignore / .git (version control metadata)
+
+    This behavior is controlled by:
+    ignore_hidden_files (config.yaml)
     """
 
-    return filename.startswith(".")
+    # Hidden files are only ignored if config allows it
+    return ignore_hidden and filename.startswith(".")
 
-# -----------------------------
-# Classify a single file
-# -----------------------------
-def classify_file(filename):
+
+# -------------------------------------------------
+# CLASSIFICATION LOGIC (CONFIG DRIVEN)
+# -------------------------------------------------
+def classify_file(filename, categories: dict):
     """
     Assigns a category to a file based on its extension.
 
-    This is used to group files into logical folders
-    during the organization phase.
+    Classification rules are defined in config.yaml
 
-    Categories:
-    - images
-    - documents
-    - videos
-    - others (fallback group)
+    Fallback behavior:
+    - If no rule matches → assign to "others"
     """
 
     ext = os.path.splitext(filename)[1].lower()
 
-    # Image formats
-    if ext in [".png", ".jpg", ".jpeg", ".gif", ".webp"]:
-        return "images"
-
-    # Document formats (including archives for now)
-    elif ext in [".pdf", ".docx", ".txt", ".md", ".zip"]:
-        return "documents"
-
-    # Video formats
-    elif ext in [".mp4", ".mov", ".avi", ".mkv"]:
-        return "videos"
-
-    # Fallback category for unknown or unsupported types
-    else:
+    # Safety: handle missing or invalid config
+    if not categories:
         return "others"
 
+    # -------------------------------------------------
+    # CONFIG-DRIVEN LOOKUP
+    # -------------------------------------------------
+    for category, extensions in categories.items():
 
-# -----------------------------
-# Scan + classify directory
-# -----------------------------
+        # Expected structure:
+        # category:
+        #   description: ...
+        #   extensions: [...]
+
+        # Defensive check for malformed config
+        if not isinstance(extensions, list):
+            continue
+
+        if ext in extensions:
+            return category
+
+    # Fallback category for unknown file types
+    return "others"
+
+
+# -------------------------------------------------
+# SCAN + CLASSIFY DIRECTORY
+# -------------------------------------------------
 def scan_and_classify(path):
     """
     Scans a directory and builds a structured representation
     of its contents.
 
-    This is the FIRST stage of the pipeline:
-
+    Pipeline:
         1. Read directory contents
-        2. Filter unwanted files (hidden/system)
-        3. Classify files by type
+        2. Filter hidden/system files (config-driven)
+        3. Classify files using config rules
         4. Separate directories from files
 
     Output format:
     {
-        images: [...],
-        documents: [...],
-        videos: [...],
+        <category>: [...],
         others: [...],
         directories: [...]
     }
     """
 
-    # Debug message to confirm which directory is being scanned
-    log_info(f"Starting scan for: {path}")
+    # Load configuration once per scan
+    config = get_config() or {}
 
-    # Final structured result used by downstream processing
+    categories = config.get("categories", {})
+    ignore_hidden = config.get("ignore_hidden_files", True)
+
+    log_info(f"scan_start | path={path}")
+
+    # -------------------------------------------------
+    # RESULT STRUCTURE INITIALIZATION
+    # -------------------------------------------------
+    # NOTE:
+    # Categories are dynamic (config-driven),
+    # but we initialize known categories + fallback.
     result = {
         "images": [],
         "documents": [],
@@ -95,61 +115,67 @@ def scan_and_classify(path):
         "directories": []
     }
 
-    # Counter for logging skipped hidden files
     skipped_hidden = 0
 
+    # -------------------------------------------------
+    # DIRECTORY ACCESS
+    # -------------------------------------------------
     try:
-        # Retrieve raw directory contents and log the count
+        # Attempt to read directory contents
+        # This may fail due to:
+        # - invalid path
+        # - permission restrictions
+        # - filesystem issues
         items = os.listdir(path)
-        log_info(f"Items found: {len(items)}")
-        
-        # Edge case: Empty directory (log a warning but continue gracefully)
-        if not items:
-            log_warning(f"Directory is empty: {path}")
 
+        log_info(f"scan_items | count={len(items)}")
+        
+        # Edge case: directory exists but contains no items
+        if not items:
+            log_warning(f"scan_empty | path={path}")
+    
     except Exception as e:
-        # Handle permission or invalid path errors
-        log_error(f"Cannot access directory: {path} | Error: {e}")
+        # Critical failure: cannot proceed without directory access
+        # Returning None signals upstream logic to abort safely
+        log_error(f"scan_error | path={path} error={e}")
         return None
 
     # -------------------------------------------------
     # ITEM PROCESSING LOOP
     # -------------------------------------------------
     for item in items:
-    
-        # STEP 1: Filter hidden files early
-        # (prevents unnecessary processing)
-        if is_hidden_file(item):
+
+        # STEP 1: Hidden file filtering (config-driven)
+        if is_hidden_file(item, ignore_hidden):
             skipped_hidden += 1
             continue
 
-        # Build full path
         full_path = os.path.join(path, item)
 
-        # STEP 2: Identify directories
+        # STEP 2: Directory detection
         if os.path.isdir(full_path):
             result["directories"].append(item)
 
-        # STEP 3: Identify and classify regular files
+        # STEP 3: File classification (config-driven)
         elif os.path.isfile(full_path):
-            category = classify_file(item)
+            category = classify_file(item, categories)
             result[category].append(item)
 
-        # STEP 4: Handle unexpected item types (e.g. symbolic links, sockets)
+        # STEP 4: Unsupported filesystem objects
         else:
-            log_warning(f"Skipping unsupported item type: {full_path}")
+            log_warning(f"scan_skip_item | path={full_path}")
 
     # -------------------------------------------------
     # FINAL SUMMARY LOG
     # -------------------------------------------------
     log_info(
-        f"Scan complete | "
-        f"images: {len(result['images'])}, "
-        f"documents: {len(result['documents'])}, "
-        f"videos: {len(result['videos'])}, "
-        f"others: {len(result['others'])}, "
-        f"directories: {len(result['directories'])}, "
-        f"hidden skipped: {skipped_hidden}"
+        f"scan_complete | "
+        f"images={len(result['images'])} "
+        f"documents={len(result['documents'])} "
+        f"videos={len(result['videos'])} "
+        f"others={len(result['others'])} "
+        f"directories={len(result['directories'])} "
+        f"hidden_skipped={skipped_hidden}"
     )
 
     return result

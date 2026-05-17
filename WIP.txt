@@ -1,16 +1,49 @@
-Phase 5 v0.3.0
-implemented:
+Phase 6 v0.4.0
 
-to be implemented:
-- config.yaml design
-- config_loader.py
-- add configurable hidden file handling
-- update file_sorter
-- update file_mover
-- add dry-run support
-- improve logging context (session IDs)
+Implemented:
 
+- config.yaml design (source of truth schema)
+- config_loader.py implementation
+- config caching layer to avoid repeated YAML reads
+- centralized execution mode contract (CLI controls dry-run behavior)
+- configurable hidden file handling (ignore_hidden_files)
+- file_sorter.py refactored to use config (removed hardcoded extensions)
+- file_mover.py refactored to use config (removed hardcoded prefix and rules)
+- removed hardcoded classification logic and replaced with config-driven system
+- implemented dry-run mode across full pipeline
+- CLI dry-run flag (--dry-run) implemented and integrated
+- dry-run architecture fixed (single source of truth)
+- refactored main.py for dry-run integration and execution flow consistency
+- logging system standardized across all modules
+- structured logging format implemented (key=value style logs)
+- move summary logs added (total files, per-category breakdown)
+- improved logging consistency across file_sorter, file_mover, and main
+- improved code commenting consistency across core modules
+- enforced separation of concerns between modules (sorting / moving / orchestration)
+- improved execution observability through summary reporting
+- Update README (v0.6.0 documentation sync)
+- Updated version referencing
+- Comment cleanup (remove outdated or redundant comments)
+- Optional config validation (basic YAML structure safety checks)
+- added logging contract definition in logger.py
 
-version polishing:
-- reduce log noise by not logging per-file in the file_mover.py
-- optional refactor: project structure cleanup
+To be implemented:
+
+Version polishing:
+- Reduce log noise in file_mover.py (remove per-file logs, keep summary logs only)
+- Optional project structure cleanup (if needed for scalability)
+
+Final safety checks:
+- Verify dry-run mode works correctly (no filesystem changes)
+- Ensure config loading handles missing fields safely (fallback behavior)
+- Verify classification works with empty or unknown file types
+- Ensure move summary logs always appear correctly
+- Check for broken imports after refactors
+- Ensure error handling is consistent across modules
+- Remove any raw print() usage if present
+- Validate CLI behavior and help messages
+- Ensure README includes correct v0.6.0 documentation
+
+Version consistency:
+- Update version to v0.6.0 in README
+- Add Git tag for v0.6.0 release

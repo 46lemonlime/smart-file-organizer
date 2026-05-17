@@ -1,56 +1,95 @@
-# Smart File Organizer (v0.3.0)
+# Smart File Organizer (v0.6.0)
 
 A Python CLI tool that organizes files in a directory by scanning, classifying, and moving them into structured folders.
 
-It automates file management tasks such as sorting files by type and preparing structured outputs for future reporting features.
+It automates file management tasks such as sorting files by type, previewing changes before execution (dry-run mode), and preparing structured outputs for future automation features.
 
 ## 🚀 Quick Start
-
+###### Standard execution
 ```bash
 python3 main.py move ~/Downloads
+```
+###### Dry-run (safe simulation)
+```bash
+python3 main.py move ~/Downloads --dry-run
 ```
 ---
 
 ## 1. 🧠 Project Overview
 
-Smart File Organizer is a lightweight CLI automation tool for cleaning and structuring directories such as Downloads or Desktop:
+Smart File Organizer is a lightweight CLI automation engine for cleaning and structuring directories such as Downloads or Desktop.
+
+It follows a config-driven and controlled execution design:
 
 1. Scans a target folder  
-2. Classifies files by type  
-3. Creates organized directories  
-4. Moves files into structured folders  
+2. Classifies files using configurable rules
+3. Simulates or executes file organization
+4. Logs structured execution summaries for observability and debugging
+
+The tool prioritizes transparency, control, and extensibility over raw automation speed.
 
 ---
 
 ## 2. ✨ Features
-* CLI-based interface for task execution  
-* Directory scanning and file detection  
-* File classification system based on extensions
-* Automated folder creation  
-* File moving engine  
-* Prefixed folder structure (`smartorg-*`)  
-* Modular architecture with clear separation of concerns:
+- CLI-based interface for task execution  
+- Config-driven system (`config.yaml`)  
+- Directory scanning and file detection  
+- File classification system (fully configurable)  
+- Automated folder creation with prefix system  
+- Structured file moving engine  
+- Prefixed folder structure (`smartorg-*`)  
+- Modular architecture with clear separation of concerns:
+
   - `file_sorter.py` → scanning & classification  
   - `file_mover.py` → file system operations  
-  - `report_generator.py` → placeholder (future feature)  
-* Structured logging system with:
-   - timestamped logs
-   - log levels (INFO / WARN / ERROR)
-   - module attribution (MAIN, FILE_SORTER, FILE_MOVER, LOGGER)
-* Execution trace visibility for debugging workflows
-* Task-based routing system via main.py
-* Cross-platform design (macOS / Windows compatible)
+  - `report_generator.py` → placeholder (future feature)
+
+- Configuration system:
+  - folder prefix control
+  - hidden file handling
+  - classification rules (YAML-driven)
+
+- Execution safety features:
+  - Dry-run mode for execution preview
+  - CLI override support
+
+- Observability system:
+  - Structured logging (key=value format for machine readability)
+  - Move summary logs (total + per-category breakdown)
+
+- Task-based routing system via main.py  
+- Cross-platform design (macOS / Windows compatible)
 
 ---
 
 ## 3. 🧱 Architecture (Design & Structure)
 ### 🧩 Design Principles
-* Separation of concerns
-* Modular architecture with internal logging
-* Parent modules only logging lifecycle events
-* CLI-first design
-* Cross-platform compatibility (macOS & Windows)
-* Safe filesystem operations (basic validation)
+- Separation of concerns
+- Config-driven architecture (no hardcoded rules)
+- Predictable and controlled execution
+- Modular responsibilities per file
+- CLI-first design
+- Observability through structured logs
+
+### 🔎 Logging System (Observability Design)
+
+The project uses a structured logging format across all modules:
+
+module_action | key=value
+
+This design ensures:
+
+- consistent debugging across the pipeline
+- machine-readable logs for analysis and filtering
+- clear separation of concerns between modules
+- scalable observability for future system expansion
+
+#### Example log format:
+
+scan_start | path=/Users/demo
+scan_items | count=12
+file_moved | file=test.txt destination=images
+scan_error | reason=permission_denied path=/data
 
 ### 📁 Project Structure
 
@@ -58,7 +97,7 @@ Smart File Organizer is a lightweight CLI automation tool for cleaning and struc
 smart-file-organizer/
 │
 ├── main.py
-├── config.yaml (future)
+├── config.yaml
 ├── logs/
 │   └── smartorg.log
 │
@@ -68,7 +107,8 @@ smart-file-organizer/
 │   ├── report_generator.py (placeholder)
 │
 ├── utils/
-│   └── logger.py
+│   ├── logger.py
+│   └── config_loader.py
 │
 ├── README.md
 └── requirements.txt
@@ -81,18 +121,26 @@ smart-file-organizer/
 ```md
 CLI Input
    ↓
-main.py (lifecycle logging only)
+main.py (orchestration layer)
    ↓
-scan_and_classify() → FILE_SORTER logs internally
+scan_and_classify() → config-driven classification system
    ↓
-move_files() → FILE_MOVER logs internally
+move_files() → dry-run aware execution engine
    ↓
-File system organized
+File system organized OR safely simulated
 ```
 
 #### report task
 
-* Placeholder for future report generation
+```md
+CLI Input
+   ↓
+main.py
+   ↓
+generate_report()
+   ↓
+Report output generated (future expansion area)
+```
 
 ---
 
@@ -144,23 +192,55 @@ To resolve this:
 3. Grant access to your terminal application (Terminal, iTerm, or VS Code)
 
 ---
+## 5. ⚙️ Configuration System
 
-## 5. 🧪 Development Overview
+This project is now fully config-driven via `config.yaml`.
+
+### Key settings:
+
+- folder_prefix → controls output folder naming  
+- ignore_hidden_files → safe handling of system files  
+- dry_run → default execution mode  
+- categories → file classification rules  
+
+
+### Example
+
+```yaml
+folder_prefix: smartorg
+ignore_hidden_files: true
+dry_run: false
+
+categories:
+  images:
+    description: "Image files"
+    extensions: [.png, .jpg]
+```
+---
+## 6. 🧪 Development Overview
 
 ### 🎯 Project Intent
 
-Smart File Organizer is being developed as a portfolio project to demonstrate Python automation, CLI design, and modular architecture.
+Smart File Organizer is a portfolio-grade automation engine demonstrating:
 
+- Python CLI design
+- Config-driven architecture
+- Safe execution systems
+- Modular design
+- Real-world file system automation
 
 ### 📌 Development Principles
 
-- Clean and maintainable structure
-- Separation of concerns (sorting, moving, reporting)
-- Module-level responsibility for logging
-- Scalable architecture for future configuration system
-- Real-world usability for file system automation
+- Clean and maintainable architecture
+- Config-driven behavior (no hardcoded rules)
+- Controlled execution (dry-run support)
+- Separation of concerns
+- Observable system behavior through structured logs
 
 ### 🧭 Roadmap
+> Versioning follows project phases.  
+> Each major phase maps directly to a version (e.g. Phase 6 → v0.6.0).
+> v0.4.0 & v0.5.0 are intermediate versions that were skipped intentionally to maintain alignment.
 
 #### v0.1.0 (Initial Setup)
  * [x] CLI interface (basic skeleton)
@@ -172,56 +252,70 @@ Smart File Organizer is being developed as a portfolio project to demonstrate Py
  * [x] File moving / organization (smartorg-* folders)
  * [x] Basic task routing system
 
-#### v0.3.0 (Current - Stability & Observability)
+#### v0.3.0 (Stability & Observability)
 * [x] Structured logging system
 * [x] Module-based log ownership
 * [x] Execution trace improvements
 * [x] Hidden file filtering
 
-#### v0.4.0 (Configuration Layer)
- * [ ] Config-driven rules (config.yaml)
- * [ ] Custom folder prefixes
- * [ ] Enable/disable file categories
- * [ ] User-defined classification rules
+#### v0.4.0 — Configuration Layer
+* [x] Config system (YAML-driven rules)
+* [x] Classification rules externalized
+* [x] Prefix configuration
+* [x] Hidden file handling
+* [x] Config caching
+
+#### v0.6.0 — Execution Safety Layer (CURRENT)
+* [x] Dry-run mode (simulation execution)
+* [x] CLI override (--dry-run)
+* [x] Controlled execution architecture
+* [x] Move summary logs
+* [x] Logging consistency improvements
 
 #### v1.0.0 (Stable Release)
  * [ ] Full configuration system
- * [ ] Dry-run mode (preview changes without executing)
+ * [ ] Undo + recovery system
  * [ ] Robust safety controls
  * [ ] Fully documented CLI tool
  * [ ] Production-ready structure
 
-### 🚧 Current Limitations (v0.3.0)
+### 🚧 Current Limitations (v0.6.0)
 
-- No configuration file (settings are currently hardcoded)
-- No dry-run mode
-- No undo functionality
-- Basic classification rules only
-- Report generator not implemented yet
+- No undo / rollback system
+- No operation history tracking
+- No GUI or dashboard interface
+- No advanced classification intelligence
+- No plugin system
 ---
 
-## 6. 📜 Version History
-[v0.3.0] (Current)
-* Introduced structured logging system
-* Implemented module-level log ownership
-* Improved execution trace visibility
-* Fixed hidden file handling in scanning logic
-* Standardized workflow logging patterns
+## 7. 📜 Version History
+### v0.6.0 (Current)
+- Config-driven architecture implemented
+- Dry-run execution system added
+- CLI override for safe execution introduced
+- File sorting and moving engines refactored
+- Logging system standardized
+- Move summary logs added
+- Config caching implemented
 
-[v0.2.0]
-* Implemented full scanning, classification, and file moving pipeline
-* Introduced modular architecture with task-based structure
-* Added prefixed folder system (smartorg-*)
-* Implemented CLI routing system with task handlers
+### v0.3.0
+- Structured logging system
+- Module-level log ownership
+- Execution trace improvements
+- Hidden file filtering
 
-[v0.1.0]
-* Initial project setup
-* CLI skeleton
-* Placeholder functions for future logic
+### v0.2.0
+- Core scanning, classification, and moving system
+- Modular architecture introduced
+- CLI routing system
+
+### v0.1.0
+- Initial CLI skeleton
+- Basic project setup
 
 ---
 
-## 7. 👤 Author
+## 8. 👤 Author
 
 
 **46lemonlime**

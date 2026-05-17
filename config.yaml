@@ -1,0 +1,80 @@
+# ----------------------------------------
+# GENERAL SETTINGS
+# ----------------------------------------
+
+# Prefix used when creating organized folders
+# Example: smartorg-images, smartorg-documents
+folder_prefix: smartorg
+
+
+# Ignore hidden files (files starting with ".")
+# WARNING:
+# Hidden files often include system, application, and configuration data
+# (e.g. .DS_Store, .env, .gitignore).
+# Keeping this set to TRUE is the safest option.
+# It prevents accidental modification or movement of system/project metadata.
+ignore_hidden_files: true
+
+
+# ----------------------------------------
+# EXECUTION SETTINGS
+# ----------------------------------------
+
+# If true, no files will be moved (simulation mode)
+# Useful for previewing changes safely
+dry_run: false
+
+
+# ----------------------------------------
+# CLASSIFICATION RULES (SOURCE OF TRUTH)
+# ----------------------------------------
+
+# File categories and their associated extensions.
+# This section defines how files are classified.
+#
+# RULES:
+# - Extensions must be lowercase
+# - Must include leading dot (e.g. ".png")
+# - Each extension belongs to exactly one category
+
+categories:
+
+  images:
+    description: "Image and graphic files"
+    extensions:
+      - .png
+      - .jpg
+      - .jpeg
+      - .gif
+      - .webp
+
+  documents:
+    description: "Text documents, PDFs, and archives"
+    extensions:
+      - .pdf
+      - .docx
+      - .txt
+      - .md
+      - .zip
+
+  videos:
+    description: "Video media files"
+    extensions:
+      - .mp4
+      - .mov
+      - .avi
+      - .mkv
+
+
+# ----------------------------------------
+# FALLBACK CATEGORY (DOCUMENTATION ONLY)
+# ----------------------------------------
+
+# "others" is NOT configurable.
+#
+# Any file that does not match the categories above
+# will automatically be placed into:
+#   <folder_prefix>-others/
+#
+# This behavior is enforced in code to ensure consistency
+# and avoid misconfiguration.

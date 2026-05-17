@@ -1,7 +1,6 @@
 # -------------------------------------------------
 # IMPORTS
 # -------------------------------------------------
-
 # Import required libraries
 import datetime
 import os
@@ -11,7 +10,6 @@ import uuid
 # -------------------------------------------------
 # LOG CONFIGURATION
 # -------------------------------------------------
-
 # Folder where logs will be stored
 LOG_DIR = "logs"
 

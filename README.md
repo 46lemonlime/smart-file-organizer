@@ -1,15 +1,15 @@
-# Smart File Organizer (v0.6.0)
+# Smart File Organizer (v0.6.1)
 
 A Python CLI tool that organizes files in a directory by scanning, classifying, and moving them into structured folders.
 
-It automates file management tasks such as sorting files by type, previewing changes before execution (dry-run mode), and preparing structured outputs for future automation features.
+It automates file management workflows such as file sorting, dry-run preview execution, and structured folder generation, with a focus on safety, configurability, and future extensibility.
 
 ## 🚀 Quick Start
-###### Standard execution
+**Standard execution**
 ```bash
 python3 main.py move ~/Downloads
 ```
-###### Dry-run (safe simulation)
+**Dry-run (safe simulation)**
 ```bash
 python3 main.py move ~/Downloads --dry-run
 ```
@@ -75,7 +75,9 @@ The tool prioritizes transparency, control, and extensibility over raw automatio
 
 The project uses a structured logging format across all modules:
 
-module_action | key=value
+```md
+module_action | key=value [key=value ...]
+```
 
 This design ensures:
 
@@ -85,12 +87,12 @@ This design ensures:
 - scalable observability for future system expansion
 
 #### Example log format:
-
+```md
 scan_start | path=/Users/demo
 scan_items | count=12
 file_moved | file=test.txt destination=images
 scan_error | reason=permission_denied path=/data
-
+```
 ### 📁 Project Structure
 
 ```
@@ -147,7 +149,7 @@ Report output generated (future expansion area)
 ## 4. 🧰 Usage & Execution
 
 
-###  ▶️ How to Use
+### ▶️ How to Use
 Run the CLI tool from the terminal:
 
 ```bash
@@ -238,48 +240,80 @@ Smart File Organizer is a portfolio-grade automation engine demonstrating:
 - Observable system behavior through structured logs
 
 ### 🧭 Roadmap
-> Versioning follows project phases.  
-> Each major phase maps directly to a version (e.g. Phase 6 → v0.6.0).
-> v0.4.0 & v0.5.0 are intermediate versions that were skipped intentionally to maintain alignment.
 
-#### v0.1.0 (Initial Setup)
+#### Versioning Strategy (Semantic Versioning / SemVer)
+
+x.y.z format:
+
+- **x (major):** stable release milestones  
+- **y (minor):** phase-based development progression  
+- **z (patch):** hotfixes and small improvements  
+
+Each major phase maps directly to a version (e.g. Phase 6 → v0.6.0).  
+v0.4.0 and v0.5.0 were internal iterations merged into adjacent releases for version alignment.
+
+
+#### Phase 1 - v0.1.0 Initial Setup
  * [x] CLI interface (basic skeleton)
  * [x] Project structure setup
 
-#### v0.2.0 (Core Automation)
+#### Phase 2 - v0.2.0 Core Automation
  * [x] Directory scanning
  * [x] File classification (by type)
  * [x] File moving / organization (smartorg-* folders)
  * [x] Basic task routing system
 
-#### v0.3.0 (Stability & Observability)
+#### Phase 3 - v0.3.0 Stability & Observability
+* [x] Core scanning and classification pipeline
+* [x] File moving engine (initial version)
 * [x] Structured logging system
 * [x] Module-based log ownership
 * [x] Execution trace improvements
 * [x] Hidden file filtering
+* [x] Logging format foundation (key=value structured contract)
 
-#### v0.4.0 — Configuration Layer
+#### Phase 6 - v0.6.0 Execution Safety Layer
 * [x] Config system (YAML-driven rules)
+* [x] Config caching layer
 * [x] Classification rules externalized
-* [x] Prefix configuration
-* [x] Hidden file handling
-* [x] Config caching
-
-#### v0.6.0 — Execution Safety Layer (CURRENT)
+* [x] Prefix configuration system
 * [x] Dry-run mode (simulation execution)
 * [x] CLI override (--dry-run)
-* [x] Controlled execution architecture
 * [x] Move summary logs
 * [x] Logging consistency improvements
+* [x] Config validation (basic YAML safety checks)
+* [x] Controlled execution architecture
 
-#### v1.0.0 (Stable Release)
- * [ ] Full configuration system
- * [ ] Undo + recovery system
- * [ ] Robust safety controls
- * [ ] Fully documented CLI tool
- * [ ] Production-ready structure
+#### Phase 7 - v0.7.0 Reliability & Edge Case Hardening
+* [ ] Improve error handling consistency across failure points (standardize patterns, not add new ones)
+* [ ] Strengthen file operation resilience (partial failure recovery, safer rollback behavior)
+* [ ] Improve classification edge-case handling (empty dirs, unusual file extensions)
+* [ ] Validate dry-run parity with real execution behavior
+* [ ] Improve logging clarity for failure scenarios (reduce ambiguity, not restructure system)
 
-### 🚧 Current Limitations (v0.6.0)
+#### Phase 8 - v0.8.0 Architecture Refinement
+* [ ] Refactor scanner/mover boundary for cleaner separation (reduce implicit coupling)
+* [ ] Improve config schema scalability (preparing for future expansion, not core changes)
+* [ ] Remove remaining redundant checks and legacy defensive logic
+* [ ] Improve internal module cohesion and responsibility clarity
+* [ ] Minor performance improvements in directory scanning
+
+#### Phase 9 - v0.9.0 Polish & Developer Experience
+* [ ] Improve CLI usability (help text clarity and consistency)
+* [ ] Final documentation refinement pass (README + examples + structure)
+* [ ] Logging readability improvements (minor tweaks, no structural changes)
+* [ ] Full edge-case testing and stabilization pass
+* [ ] Pre-release bug fixing and behavioral consistency audit
+
+#### Phase 10 - v1.0.0 Stable Release
+* [ ] Fully stable and production-ready execution pipeline
+* [ ] Fully validated config-driven system
+* [ ] Complete dry-run safety guarantees
+* [ ] Fully consistent logging and observability layer
+* [ ] Clean, documented, portfolio-ready architecture
+* [ ] Final cleanup of development artifacts and temporary logic
+
+### 🚧 Current Limitations
 
 - No undo / rollback system
 - No operation history tracking
@@ -289,20 +323,32 @@ Smart File Organizer is a portfolio-grade automation engine demonstrating:
 ---
 
 ## 7. 📜 Version History
-### v0.6.0 (Current)
-- Config-driven architecture implemented
-- Dry-run execution system added
-- CLI override for safe execution introduced
-- File sorting and moving engines refactored
-- Logging system standardized
-- Move summary logs added
-- Config caching implemented
+### v0.6.1
+- README improvements and formatting fixes
+- Logging documentation consistency
+
+### v0.6.0
+- Config-driven architecture (YAML-based)
+- Config loader with caching and validation
+- Classification rules externalized
+- Prefix configuration system
+- Dry-run execution system (full pipeline)
+- CLI override for execution control (`--dry-run`)
+- File sorting and moving refactored for config
+- Logging system standardized across modules
+- Structured logging format enforced (key=value)
+- Move summary logs (total + per-category)
+- Logging consistency improvements
+- Controlled execution architecture
 
 ### v0.3.0
+- Core scanning and classification pipeline
+- Initial file moving engine
 - Structured logging system
-- Module-level log ownership
+- Module-based log ownership
 - Execution trace improvements
 - Hidden file filtering
+- Logging format foundation (key=value)
 
 ### v0.2.0
 - Core scanning, classification, and moving system

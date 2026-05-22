@@ -1,49 +1,166 @@
-Phase 6 v0.4.0
+Phase 7 - v0.7.0 Reliability & Edge Case Hardening
 
-Implemented:
+Implemented (FINAL COMMIT SUMMARY):
+- Standardize error handling across all modules
+  - unify log_error structure usage
+  - ensure consistent failure format across modules
+  - normalize structured exception metadata
+  - improve machine-readable logging consistency
 
-- config.yaml design (source of truth schema)
-- config_loader.py implementation
-- config caching layer to avoid repeated YAML reads
-- centralized execution mode contract (CLI controls dry-run behavior)
-- configurable hidden file handling (ignore_hidden_files)
-- file_sorter.py refactored to use config (removed hardcoded extensions)
-- file_mover.py refactored to use config (removed hardcoded prefix and rules)
-- removed hardcoded classification logic and replaced with config-driven system
-- implemented dry-run mode across full pipeline
-- CLI dry-run flag (--dry-run) implemented and integrated
-- dry-run architecture fixed (single source of truth)
-- refactored main.py for dry-run integration and execution flow consistency
-- logging system standardized across all modules
-- structured logging format implemented (key=value style logs)
-- move summary logs added (total files, per-category breakdown)
-- improved logging consistency across file_sorter, file_mover, and main
-- improved code commenting consistency across core modules
-- enforced separation of concerns between modules (sorting / moving / orchestration)
-- improved execution observability through summary reporting
-- Update README (v0.6.0 documentation sync)
-- Updated version referencing
-- Comment cleanup (remove outdated or redundant comments)
-- Optional config validation (basic YAML structure safety checks)
-- added logging contract definition in logger.py
+- Logging architecture stabilization
+  - standardized structured logging contract project-wide
+  - normalized automatic module context detection
+  - stabilized logging pipeline after refactor regressions
+  - improved exception formatting using key=value structure
+  - confirmed end-to-end execution traceability through logs
+
+- Improve file system edge case handling
+  - permission denied files
+  - locked / in-use files
+  - symlinks (safe handling strategy)
+  - hidden files
+  - very long file names
+  - unsupported or malformed file paths
+  - invalid operation payload protection
+  - invalid planner/schema protection
+
+- Refactor file system pipeline into modular architecture
+  - split original file_sorter responsibilities into dedicated modules
+  - file_scanner.py now handles orchestration only
+  - file_filter.py centralizes skip/filter logic
+  - file_classificator.py isolates extension classification logic
+  - execution_planner.py introduced as deterministic planning layer
+  - file_mover.py converted into pure execution engine
+  - centralized operation generation into a single planning pipeline
+  - ensured strict separation between:
+      - scanning
+      - planning
+      - execution
+  - improved maintainability, debuggability, and extensibility
+
+- Deterministic execution planning architecture
+  - introduced explicit execution plan abstraction
+  - planner now generates:
+      - folders_to_create
+      - operations
+      - skipped entries
+  - execution layer now consumes precomputed plans only
+  - removed decision-making responsibilities from execution layer
+  - improved future testability and execution reproducibility
+
+- updated requirements.txt
+  - confirmed no external dependencies required
+  - project now relies only on Python standard library
+
+- defined future /utils/helpers.py usage and architecture comments
+
+- Strengthen classification robustness
+  - handle missing or empty config categories safely
+  - ensure fallback behavior is always "others"
+  - validate unknown or unusual file extensions
+  - improve defensive validation for malformed scanner outputs
+
+- Validate dry-run parity with real execution
+  - ensured identical decision logic between modes
+  - ensured no divergence between dry-run and execution paths
+  - confirmed identical classification results in both modes
+  - dry-run now differs ONLY at filesystem side-effect layer
+  - validated deterministic execution ordering
+
+- Configuration reliability improvements
+  - improved config validation safety
+  - added defensive config fallback behavior
+  - stabilized runtime defaults for invalid configuration values
+  - improved structured config loading logs
+- Improve logging clarity for failures
+  - ensure error logs include:
+    - action
+    - file/path
+    - reason
+  - reduce ambiguous or generic error messages
+- Improve resilience of file operations
+    - partial failure handling
+    - pipeline continuation guarantees
+    - isolate per-file execution failures
+- Execution Resilience Enhancements (Completed)
+    - Implemented per-file execution isolation
+    - Ensured pipeline continuation on all failure points
+    - Added partial failure handling across execution layer
+- Observability Enhancements (non-blocking improvements):
+    - Added op_id tracking for operation traceability
+    - Introduced total_failed tracking for execution visibility
+- Review and tighten config edge-case handling
+  - missing keys fallback behavior
+  - malformed YAML safety
+  - empty category definitions
 
 To be implemented:
+- Final consistency pass
+  - ensure all modules follow same logging patterns
+  - ensure no raw print() usage remains
+  - ensure consistent error propagation behavior
 
 Version polishing:
-- Reduce log noise in file_mover.py (remove per-file logs, keep summary logs only)
-- Optional project structure cleanup (if needed for scalability)
+- ensure README and version history match v0.7.0 scope
+- confirm roadmap alignment (no drift between docs and implementation)
 
 Final safety checks:
-- Verify dry-run mode works correctly (no filesystem changes)
-- Ensure config loading handles missing fields safely (fallback behavior)
-- Verify classification works with empty or unknown file types
-- Ensure move summary logs always appear correctly
-- Check for broken imports after refactors
-- Ensure error handling is consistent across modules
-- Remove any raw print() usage if present
-- Validate CLI behavior and help messages
-- Ensure README includes correct v0.6.0 documentation
+- run full dry-run on multiple folders (Downloads/Desktop test cases)
+- verify no crashes on empty directories
+- verify logs remain structured and consistent
+- verify no broken imports after changes
 
 Version consistency:
-- Update version to v0.6.0 in README
-- Add Git tag for v0.6.0 release
+- confirm version is set to v0.7.0 across README and CLI output
+- ensure git commit and tag alignment (no mismatch between code and docs)
+
+WIP Phase 8:
+# -------------------------------------------------
+# PHASE 8 — ARCHITECTURE HARDENING & EXTENSIBILITY
+# -------------------------------------------------
+
+[ ] Contract enforcement layer
+    - validate scanner output schema
+    - validate execution planner structure
+    - validate operation payloads before execution
+    - centralize shared contracts/types
+    - prevent schema drift between modules
+    - enforce deterministic pipeline boundaries
+
+[ ] Performance optimization
+    - reduce repeated filesystem checks
+    - optimize large-directory scanning
+    - benchmark scan/planning/execution phases
+    - improve memory efficiency for large operation sets
+    - evaluate lazy iteration / generator pipelines
+    - profile execution bottlenecks
+
+[ ] Plugin-based category system
+    - support external classification plugins
+    - allow dynamic category registration
+    - decouple categories from core config
+    - enable custom user-defined classifiers
+    - support future AI-based classification modules
+
+[ ] Unify Error Action Taxonomy
+    - Standardize all error action names across modules
+    - Replace loosely scoped actions like:
+        - move_failed
+        - scan_error
+        - plan_invalid
+    - With a consistent taxonomy structure
+
+[ ] Introduce Structured Event Schema Layer
+    - Define a unified event format for all logs
+    - Move from ad-hoc key=value logs → structured event contract
+    - Proposed direction:
+        - event_type
+        - module
+        - action
+        - payload (key=value)
+
+Later you could:
+
+validate config schema more strictly
+enforce types
+add defaults centrally

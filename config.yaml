@@ -15,6 +15,14 @@ folder_prefix: smartorg
 # It prevents accidental modification or movement of system/project metadata.
 ignore_hidden_files: true
 
+# Ignore symbolic links (symlinks)
+# WARNING:
+# Symlinks may point to files or directories outside the target path.
+# Following them can lead to unintended file operations, including:
+# - modifying files outside the intended scope
+# - recursive directory traversal (potential infinite loops)
+# Keeping this set to TRUE is the safest option.
+ignore_symlinks: true
 
 # ----------------------------------------
 # EXECUTION SETTINGS

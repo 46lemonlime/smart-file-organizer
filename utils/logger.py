@@ -1,39 +1,58 @@
 # -------------------------------------------------
+# STRUCTURED LOGGING CONTRACT
+# -------------------------------------------------
+"""
+All logs in this project MUST follow this format:
+
+    action_name | key=value key=value
+
+Examples:
+    scan_start | path=/downloads
+    move_failed | reason=file_missing file=test.pdf
+
+Rules:
+- Use lowercase snake_case actions
+- Use structured key=value metadata
+- Avoid free-text production logs
+- Keep logs machine-readable and consistent
+"""
+
+# -------------------------------------------------
 # IMPORTS
 # -------------------------------------------------
-# Import required libraries
 import datetime
-import os
 import inspect
+import os
 import uuid
+
 
 # -------------------------------------------------
 # LOG CONFIGURATION
 # -------------------------------------------------
-# Folder where logs will be stored
+# Folder where logs are stored
 LOG_DIR = "logs"
 
-# Full path to the log file
+# Full path to log file
 LOG_FILE = os.path.join(LOG_DIR, "smartorg.log")
 
-#Session ID for correlating logs across a single run (optional, can be used for advanced log analysis)
-SESSION_ID = str(uuid.uuid4())[:8]  # e.g. "a1b2c3d4"
+# Session identifier for correlating logs
+SESSION_ID = str(uuid.uuid4())[:8]
+
 
 # -------------------------------------------------
-# INTERNAL: get caller module name for contextual logging
+# INTERNAL: get caller module name
 # -------------------------------------------------
 def _get_caller_module():
     """
-    Returns normalized caller module name for logging.
+    Returns normalized caller module name.
 
     Examples:
     - __main__ → MAIN
-    - tasks.file_sorter → FILE_SORTER
+    - tasks.file_scanner → FILE_SCANNER
     """
 
     stack = inspect.stack()
 
-    # safer: walk upward until we exit logger module
     for frame_info in stack:
         module = inspect.getmodule(frame_info.frame)
 
@@ -51,97 +70,115 @@ def _get_caller_module():
 # -------------------------------------------------
 # INTERNAL: ensure log directory exists
 # -------------------------------------------------
-def _ensure_log_directory(): #In Python, a leading underscore is a convention that means: “internal use only”.
+def _ensure_log_directory():
     """
-    Ensures that the logs directory exists before writing logs.
-
-    Why this matters:
-    - Fresh installs won't have /logs
-    - Deleted folders would otherwise crash logging
-    - Keeps logger self-contained and safe
+    Ensures log directory exists before writing logs.
     """
 
     if not os.path.exists(LOG_DIR):
-        os.makedirs(LOG_DIR)  # creates folder (and parent dirs if needed)
+        os.makedirs(LOG_DIR)
 
 
-# ----------------------------------------
-# Internal function: write log entry
-# ----------------------------------------
+# -------------------------------------------------
+# INTERNAL: sanitize structured values
+# -------------------------------------------------
+def _sanitize_log_value(value):
+    """
+    Prevents structured log corruption.
+
+    Normalizes:
+    - spaces
+    - newlines
+    - tabs
+    - pipe separators
+    """
+
+    value = str(value)
+
+    value = value.replace("\n", "_")
+    value = value.replace("\t", "_")
+    value = value.replace("|", "_")
+    value = value.replace(" ", "_")
+
+    return value
+
+
+# -------------------------------------------------
+# INTERNAL: write log entry
+# -------------------------------------------------
 def _write_log(level: str, message: str):
     """
-    Writes a formatted log entry into the log file.
+    Writes formatted log entry into log file.
 
-    Each log entry includes:
-    - Timestamp (ISO 8601 format)
-    - Log level (INFO / WARN / ERROR)
-    - Message content
+    Logging failures should NEVER crash application flow.
     """
 
-    # Ensure logging directory exists before writing
-    _ensure_log_directory()
+    try:
 
-    # Automatically capture caller module for better log context
-    module = _get_caller_module()
+        _ensure_log_directory()
 
-    # Create timestamp in ISO format (e.g. 2026-05-15T12:34:56)
-    timestamp = datetime.datetime.now().isoformat()
+        module = _get_caller_module()
 
-    # Format final log line as: [timestamp][session_id][LEVEL][MODULE] message
-    line = f"[{timestamp}][{SESSION_ID}][{level}][{module}] {message}\n"
+        # Cleaner ISO timestamp
+        timestamp = datetime.datetime.now().isoformat(timespec="seconds")
 
-    # ----------------------------------------
-    # Open file in append mode ("a")
-    # ----------------------------------------
-    # "a" means:
-    # - append mode (does NOT overwrite file)
-    # - creates file if it doesn't exist
-    # - writes at the end of the file
-    with open(LOG_FILE, "a") as f:
-        f.write(line)
+        # Defensive normalization
+        message = str(message)
 
-# ----------------------------------------
-# Public log: INFO level
-# ----------------------------------------
+        line = f"[{timestamp}][{SESSION_ID}][{level}][{module}] {message}\n"
+
+        with open(LOG_FILE, "a", encoding="utf-8") as f:
+            f.write(line)
+
+    except Exception as e:
+        # Final fallback protection
+        print(f"[LOGGER_FAILURE] {type(e).__name__}: {e}")
+
+
+# -------------------------------------------------
+# PUBLIC: INFO log
+# -------------------------------------------------
 def log_info(message: str):
     """
-    Used for general information (normal operations)
-    Automatically detects the calling module.
+    General operational logging.
     """
+
     _write_log("INFO", message)
 
 
-# ----------------------------------------
-# Public log: WARNING level
-# ----------------------------------------
+# -------------------------------------------------
+# PUBLIC: WARNING log
+# -------------------------------------------------
 def log_warning(message: str):
     """
-    Used when something unexpected happens,
-    but program can continue safely
-    Automatically detects the calling module.
+    Recoverable or non-critical issues.
     """
+
     _write_log("WARN", message)
 
 
-# ----------------------------------------
-# Public log: ERROR level
-# ----------------------------------------
+# -------------------------------------------------
+# PUBLIC: ERROR log
+# -------------------------------------------------
 def log_error(message: str, error: Exception = None):
     """
-    Used when something fails or breaks
-    Automatically detects the calling module.
-    Adds optional exception context for better debugging.
+    Failure and exception logging.
     """
 
-    # Base message
-    final_message = message
+    final_message = str(message)
 
-    # If an exception is provided, enrich the log
+    # Optional structured exception enrichment
     if error is not None:
-        final_message += f" | Exception: {type(error).__name__}"
 
-        # Add actual exception message if available
+        final_message += (
+            f" | exception={type(error).__name__}"
+        )
+
         if str(error):
-            final_message += f" | Details: {str(error)}"
+            safe_details = _sanitize_log_value(error)
+
+            final_message += (
+                f" | details={safe_details}"
+            )
 
     _write_log("ERROR", final_message)

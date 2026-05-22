@@ -1,8 +1,8 @@
-# Smart File Organizer (v0.6.1)
+# Smart File Organizer (v0.7.0)
 
-A Python CLI tool that organizes files in a directory by scanning, classifying, and moving them into structured folders.
+A Python CLI tool that organizes files in a directory by scanning, classifying, planning, and executing structured file movements.
 
-It automates file management workflows such as file sorting, dry-run preview execution, and structured folder generation, with a focus on safety, configurability, and future extensibility.
+It automates file management workflows such as file sorting, dry-run simulation, and structured folder generation, with a focus on safety, configurability, and extensibility.
 
 ## 🚀 Quick Start
 **Standard execution**
@@ -19,80 +19,95 @@ python3 main.py move ~/Downloads --dry-run
 
 Smart File Organizer is a lightweight CLI automation engine for cleaning and structuring directories such as Downloads or Desktop.
 
-It follows a config-driven and controlled execution design:
+It follows a config-driven and deterministic execution design:
 
-1. Scans a target folder  
-2. Classifies files using configurable rules
-3. Simulates or executes file organization
-4. Logs structured execution summaries for observability and debugging
+1. Scans a target folder
+2. Filters unwanted items
+3. Classifies files using configurable rules
+4. Builds a deterministic execution plan
+5. Executes or simulates file system operations
+6. Logs structured execution traces for observability and debugging
 
-The tool prioritizes transparency, control, and extensibility over raw automation speed.
+The system prioritizes transparency, control, and reproducibility over raw automation speed.
 
 ---
 
 ## 2. ✨ Features
-- CLI-based interface for task execution  
-- Config-driven system (`config.yaml`)  
-- Directory scanning and file detection  
-- File classification system (fully configurable)  
-- Automated folder creation with prefix system  
-- Structured file moving engine  
-- Prefixed folder structure (`smartorg-*`)  
-- Modular architecture with clear separation of concerns:
-
-  - `file_sorter.py` → scanning & classification  
-  - `file_mover.py` → file system operations  
-  - `report_generator.py` → placeholder (future feature)
-
-- Configuration system:
-  - folder prefix control
-  - hidden file handling
-  - classification rules (YAML-driven)
-
-- Execution safety features:
-  - Dry-run mode for execution preview
-  - CLI override support
-
-- Observability system:
-  - Structured logging (key=value format for machine readability)
-  - Move summary logs (total + per-category breakdown)
-
-- Task-based routing system via main.py  
-- Cross-platform design (macOS / Windows compatible)
+- CLI-based interface for task execution
+- Config-driven system (config.yaml)
+- Modular pipeline architecture
+- Deterministic execution planning layer
+- Dry-run simulation mode
+- Defensive file system execution engine
+- Structured file classification system
+- Folder prefix-based organization system (smartorg-*)
+- Core Modules:
+   - file_scanner.py → directory scanning orchestration
+   - file_filter.py → skip/filter rules engine
+   - file_classificator.py → extension-based classification
+   - execution_planner.py → deterministic execution plan builder
+   - file_mover.py → execution engine (no classification or planning logic)
+- Configuration System
+   - folder prefix control
+   - hidden file handling
+   - classification rules (YAML-driven)
+- Execution Safety
+   - Dry-run mode for safe previews
+   - Strict separation of planning vs execution
+   - Failure isolation per file operation
+- Observability System
+   - Structured logging (key=value format)
+   - Execution traceability across all modules
+   - Move summary logs (total + per-category breakdown)
+   - Failure visibility with structured metadata
+   - Optional execution tracing enhancements:
+      - op_id tracking
+      - total_failed tracking
 
 ---
 
 ## 3. 🧱 Architecture (Design & Structure)
 ### 🧩 Design Principles
 - Separation of concerns
-- Config-driven architecture (no hardcoded rules)
-- Predictable and controlled execution
+- Config-driven architecture
+- Deterministic execution pipeline
 - Modular responsibilities per file
 - CLI-first design
-- Observability through structured logs
+- Structured log-based observability
 
 ### 🔎 Logging System (Observability Design)
 
-The project uses a structured logging format across all modules:
+The project uses a structured logging system across all modules.
 
 ```md
 module_action | key=value [key=value ...]
 ```
 
-This design ensures:
+- Design guarantees:
+   - consistent debugging across the full pipeline
+   - machine-readable logs for filtering and analysis
+   - consistent operational traceability
+   - scalable observability for future system expansion
+   - consistent failure diagnostics across modules
+   - clean separation of concerns between scanning, planning, and execution layers
 
-- consistent debugging across the pipeline
-- machine-readable logs for analysis and filtering
-- clear separation of concerns between modules
-- scalable observability for future system expansion
 
-#### Example log format:
-```md
-scan_start | path=/Users/demo
-scan_items | count=12
-file_moved | file=test.txt destination=images
-scan_error | reason=permission_denied path=/data
-```
+
+#### Field Naming Consistency
+| Field | Meaning |
+|---|---|
+|path	| Generic filesystem path|
+|source_path | Original file location|
+|destination_path | Target file location|
+|file	| Filename only|
+|reason	| Machine-readable failure reason|
+
+**Avoid inconsistent aliases such as:**
+- src
+- dest
+- filepath
+- target
+
 ### 📁 Project Structure
 
 ```
@@ -100,17 +115,22 @@ smart-file-organizer/
 │
 ├── main.py
 ├── config.yaml
+│
 ├── logs/
 │   └── smartorg.log
 │
 ├── tasks/
-│   ├── file_sorter.py
+│   ├── file_scanner.py
+│   ├── file_filter.py
+│   ├── file_classificator.py
+│   ├── execution_planner.py
 │   ├── file_mover.py
-│   ├── report_generator.py (placeholder)
+│   └── report_generator.py
 │
 ├── utils/
 │   ├── logger.py
-│   └── config_loader.py
+│   ├── config_loader.py
+│   └── helpers.py
 │
 ├── README.md
 └── requirements.txt
@@ -125,11 +145,13 @@ CLI Input
    ↓
 main.py (orchestration layer)
    ↓
-scan_and_classify() → config-driven classification system
+scan_and_classify()
    ↓
-move_files() → dry-run aware execution engine
+execution_planner.py
    ↓
-File system organized OR safely simulated
+move_files()
+   ↓
+Filesystem changes OR dry-run simulation
 ```
 
 #### report task
@@ -285,18 +307,28 @@ v0.4.0 and v0.5.0 were internal iterations merged into adjacent releases for ver
 * [x] Controlled execution architecture
 
 #### Phase 7 - v0.7.0 Reliability & Edge Case Hardening
-* [ ] Improve error handling consistency across failure points (standardize patterns, not add new ones)
-* [ ] Strengthen file operation resilience (partial failure recovery, safer rollback behavior)
-* [ ] Improve classification edge-case handling (empty dirs, unusual file extensions)
-* [ ] Validate dry-run parity with real execution behavior
-* [ ] Improve logging clarity for failure scenarios (reduce ambiguity, not restructure system)
+* [x] Standardize error handling across modules (consistent log_error structure)
+* [x] Improve file operation resilience (per-file isolation, safe continuation)
+* [x] Handle classification edge cases (empty dirs, bad extensions, invalid inputs)
+* [x] Validate dry-run parity vs real execution (logic identical, only FS differs)
+* [x] Improve failure log clarity (structured, non-ambiguous messages)
+* [x] Refactor pipeline architecture (scanner → filter → classify → plan → move)
+* [x] Add execution planner layer (deterministic plan generation)
+* [x] Enforce execution-only mover (no decision logic in file_mover)
+* [x] Harden config edge cases (YAML safety, missing keys, defaults)
+* [x] Improve observability (structured logs, op_id, total_failed)
+* [x] Ensure full traceability (end-to-end structured logging)
 
-#### Phase 8 - v0.8.0 Architecture Refinement
-* [ ] Refactor scanner/mover boundary for cleaner separation (reduce implicit coupling)
-* [ ] Improve config schema scalability (preparing for future expansion, not core changes)
-* [ ] Remove remaining redundant checks and legacy defensive logic
-* [ ] Improve internal module cohesion and responsibility clarity
-* [ ] Minor performance improvements in directory scanning
+#### Phase 8 - v0.8.0 Observability & Architecture Refinement
+* [ ] Refactor scanner/mover boundary (reduce coupling)
+* [ ] Improve config schema scalability (future-safe structure)
+* [ ] Remove redundant defensive checks (cleanup without behavior change)
+* [ ] Improve module cohesion (clear responsibilities)
+* [ ] Optimize directory scanning (minor performance gains)
+* [ ] Add global event schema layer (standardize system events)
+* [ ] Unify error taxonomy (consistent failure naming)
+* [ ] Improve op_id propagation (end-to-end consistency)
+* [ ] Standardize warning levels (reduce noise, define severity rules)
 
 #### Phase 9 - v0.9.0 Polish & Developer Experience
 * [ ] Improve CLI usability (help text clarity and consistency)
@@ -323,6 +355,17 @@ v0.4.0 and v0.5.0 were internal iterations merged into adjacent releases for ver
 ---
 
 ## 7. 📜 Version History
+
+### v0.7.0
+- full pipeline refactor (scanner → planner → mover)
+- execution planner introduced
+- structured logging standardization
+- resilience improvements
+- per-operation failure isolation (no rollback)
+- deterministic execution planning (filesystem-dependent execution phase)
+- config edge-case hardening
+- observability enhancements (op_id, total_failed)
+
 ### v0.6.1
 - README improvements and formatting fixes
 - Logging documentation consistency

@@ -1,8 +1,36 @@
-# -------------------------------------------------
-# STRUCTURED LOGGING CONTRACT
-# -------------------------------------------------
 """
-All logs in this project MUST follow this format:
+Smart File Organizer - Structured Logging Infrastructure
+
+This module provides the centralized structured logging system used
+across the entire application.
+
+Primary Responsibilities:
+- Provide standardized structured logging APIs
+- Enforce machine-readable log formatting
+- Attach execution metadata automatically
+- Handle logging fault tolerance
+- Maintain session-level execution traceability
+- Normalize log output consistency
+
+Architecture Role:
+This module acts as the observability infrastructure layer of the system.
+
+All modules depend on this logging contract for:
+- operational visibility
+- debugging
+- execution tracing
+- failure diagnostics
+- future reporting systems
+
+Logging Philosophy:
+- Structured over free-text logging
+- Machine-readable log output
+- Consistent metadata formatting
+- Stable log taxonomy
+- Failure-safe logging behavior
+
+Structured Log Contract:
+All logs follow the format:
 
     action_name | key=value key=value
 
@@ -10,11 +38,32 @@ Examples:
     scan_start | path=/downloads
     move_failed | reason=file_missing file=test.pdf
 
-Rules:
-- Use lowercase snake_case actions
-- Use structured key=value metadata
-- Avoid free-text production logs
-- Keep logs machine-readable and consistent
+Automatic Metadata:
+Each log entry automatically includes:
+- timestamp
+- session identifier
+- severity level
+- caller module
+
+Observability Features:
+- Session correlation support
+- Module ownership visibility
+- Structured exception enrichment
+- Log sanitization protection
+- Failure-safe logging writes
+
+Failure Handling Strategy:
+Logging failures must NEVER interrupt application execution.
+
+If the logging system itself fails, execution continues with
+fallback console diagnostics.
+
+Design Principles:
+- Centralized observability
+- Structured logging contracts
+- Machine-readable logs
+- Failure isolation
+- Consistent operational tracing
 """
 
 # -------------------------------------------------

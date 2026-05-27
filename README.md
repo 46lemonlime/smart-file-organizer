@@ -1,4 +1,4 @@
-# Smart File Organizer (v0.7.0)
+# Smart File Organizer (v0.7.1)
 
 A Python CLI tool that organizes files in a directory by scanning, classifying, planning, and executing structured file movements.
 
@@ -42,11 +42,14 @@ The system prioritizes transparency, control, and reproducibility over raw autom
 - Structured file classification system
 - Folder prefix-based organization system (smartorg-*)
 - Core Modules:
-   - file_scanner.py → directory scanning orchestration
-   - file_filter.py → skip/filter rules engine
-   - file_classificator.py → extension-based classification
-   - execution_planner.py → deterministic execution plan builder
-   - file_mover.py → execution engine (no classification or planning logic)
+   - discovery/scanner.py → raw filesystem discovery
+   - discovery/filter.py → skip/filter rules engine
+   - discovery/classifier.py → config-driven classification
+   - discovery/coordinator.py → discovery pipeline orchestration
+   - execution/planner.py → deterministic execution planning
+   - execution/executor.py → filesystem execution layer
+   - reporting/reporter.py → future reporting subsystem
+   - contracts.py → shared typed pipeline contracts
 - Configuration System
    - folder prefix control
    - hidden file handling
@@ -63,17 +66,37 @@ The system prioritizes transparency, control, and reproducibility over raw autom
    - Optional execution tracing enhancements:
       - op_id tracking
       - total_failed tracking
-
+- Typed dataclass-based pipeline contracts
+- Discovery/execution layered architecture
+- Coordinator-based discovery pipeline
 ---
 
 ## 3. 🧱 Architecture (Design & Structure)
-### 🧩 Design Principles
+### 🏛️ Design Principles
 - Separation of concerns
 - Config-driven architecture
 - Deterministic execution pipeline
 - Modular responsibilities per file
 - CLI-first design
 - Structured log-based observability
+
+### 🧩 Contracts System
+
+The project uses centralized typed contracts (`contracts.py`)
+to define stable inter-module structures.
+
+These contracts:
+- reduce dynamic dictionary usage
+- improve pipeline consistency
+- strengthen type safety
+- centralize schema ownership
+
+Current contracts include:
+- DiscoveredItem
+- ClassifiedDiscovery
+- ExecutionOperation
+- ExecutionPlan
+- SkippedOperation
 
 ### 🔎 Logging System (Observability Design)
 
@@ -115,22 +138,28 @@ smart-file-organizer/
 │
 ├── main.py
 ├── config.yaml
+├── contracts.py
 │
 ├── logs/
 │   └── smartorg.log
 │
 ├── tasks/
-│   ├── file_scanner.py
-│   ├── file_filter.py
-│   ├── file_classificator.py
-│   ├── execution_planner.py
-│   ├── file_mover.py
-│   └── report_generator.py
+│   ├── discovery/
+│   │   ├── scanner.py
+│   │   ├── filter.py
+│   │   ├── classifier.py
+│   │   └── coordinator.py
+│   │
+│   ├── execution/
+│   │   ├── planner.py
+│   │   └── executor.py
+│   │
+│   └── reporting/
+│       └── reporter.py
 │
 ├── utils/
 │   ├── logger.py
-│   ├── config_loader.py
-│   └── helpers.py
+│   └── config_loader.py
 │
 ├── README.md
 └── requirements.txt
@@ -143,13 +172,19 @@ smart-file-organizer/
 ```md
 CLI Input
    ↓
-main.py (orchestration layer)
+main.py
    ↓
-scan_and_classify()
+discovery/coordinator.py
    ↓
-execution_planner.py
+discovery/scanner.py
    ↓
-move_files()
+discovery/filter.py
+   ↓
+discovery/classifier.py
+   ↓
+execution/planner.py
+   ↓
+execution/executor.py
    ↓
 Filesystem changes OR dry-run simulation
 ```
@@ -320,15 +355,16 @@ v0.4.0 and v0.5.0 were internal iterations merged into adjacent releases for ver
 * [x] Ensure full traceability (end-to-end structured logging)
 
 #### Phase 8 - v0.8.0 Observability & Architecture Refinement
-* [ ] Refactor scanner/mover boundary (reduce coupling)
-* [ ] Improve config schema scalability (future-safe structure)
-* [ ] Remove redundant defensive checks (cleanup without behavior change)
-* [ ] Improve module cohesion (clear responsibilities)
-* [ ] Optimize directory scanning (minor performance gains)
-* [ ] Add global event schema layer (standardize system events)
-* [ ] Unify error taxonomy (consistent failure naming)
-* [ ] Improve op_id propagation (end-to-end consistency)
-* [ ] Standardize warning levels (reduce noise, define severity rules)
+* [ ] Build reporting system foundation (deterministic execution reports)
+* [ ] Improve execution contract validation
+* [ ] Reduce module coupling
+* [ ] Improve module cohesion
+* [ ] Optimize directory scanning
+* [ ] Add global event schema layer
+* [ ] Unify error taxonomy
+* [ ] Improve op_id propagation
+* [ ] Standardize warning severity levels
+* [ ] Remove redundant defensive checks
 
 #### Phase 9 - v0.9.0 Polish & Developer Experience
 * [ ] Improve CLI usability (help text clarity and consistency)
@@ -355,6 +391,17 @@ v0.4.0 and v0.5.0 were internal iterations merged into adjacent releases for ver
 ---
 
 ## 7. 📜 Version History
+
+### v0.7.1
+- discovery subsystem refactor
+- layered discovery architecture introduced
+- scanner/coordinator responsibility split
+- typed dataclass contracts introduced
+- execution contracts centralized in contracts.py
+- typed execution pipeline contracts
+- improved architectural separation of concerns
+- reduced module coupling
+- improved pipeline readability and maintainability
 
 ### v0.7.0
 - full pipeline refactor (scanner → planner → mover)

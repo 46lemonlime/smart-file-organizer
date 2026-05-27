@@ -1,3 +1,64 @@
+"""
+Smart File Organizer - Main Application Entry Point
+
+This module acts as the orchestration layer of the application.
+
+Responsibilities:
+- Parse CLI arguments
+- Load and propagate runtime configuration
+- Validate execution context
+- Route supported tasks
+- Coordinate high-level pipeline execution
+- Enforce inter-module contract validation
+- Provide top-level execution observability
+
+Architecture Role:
+This file intentionally contains NO business logic related to:
+- filesystem discovery
+- file filtering
+- classification
+- execution planning
+- filesystem mutations
+
+Instead, it functions as the top-level orchestration layer
+responsible for coordinating execution flow between
+specialized pipeline modules.
+
+Pipeline Overview:
+CLI
+→ configuration loading
+→ context validation
+→ discovery coordination
+→ execution planning
+→ filesystem execution
+
+Supported Tasks:
+- move:
+    Full organization pipeline execution
+- report:
+    Reporting workflow entrypoint (future expansion)
+
+Design Principles:
+- separation of concerns
+- deterministic orchestration
+- explicit contract validation
+- config-driven execution
+- structured observability
+- failure isolation
+
+Contract Enforcement:
+This module validates downstream module contracts before
+continuing execution to prevent cascading failures and
+improve debugging clarity.
+
+Observability:
+Structured logs are emitted throughout execution to provide:
+- execution traceability
+- operational visibility
+- pipeline diagnostics
+- failure localization
+"""
+
 # -------------------------------------------------
 # IMPORTS
 # -------------------------------------------------
@@ -6,52 +67,61 @@ import argparse
 import os
 
 # Import modules from the project
-from tasks.execution_planner import build_execution_plan
-from tasks.file_scanner import scan_and_classify
-from tasks.file_mover import move_files
-from tasks.report_generator import generate_report
+from tasks.execution.planner import build_execution_plan
+from tasks.discovery.coordinator import discover_files
+from tasks.execution.executor import move_files
+from tasks.reporting.reporter import generate_report
+
 from utils.logger import log_info, log_error
 from utils.config_loader import get_config
+
+# Import shared contracts
+from contracts import ExecutionPlan
 
 
 # -------------------------------------------------
 # TASK HANDLERS
 # -------------------------------------------------
-def handle_move(path, dry_run, folder_prefix):
+def handle_move(
+    path: str,
+    dry_run: bool,
+    folder_prefix: str
+):
     """
-    Full file organization pipeline:
+    Executes the full organization pipeline.
 
-    1. Scan directory
-    2. Classify files
-    3. Build execution plan (DICT CONTRACT)
-    4. Execute operations
+    PIPELINE:
+    1. Discover filesystem entities
+    2. Classify discovered files
+    3. Build deterministic execution plan
+    4. Execute filesystem operations
     """
 
     log_info(f"move_start | dry_run={dry_run}")
 
     # -------------------------------------------------
-    # STEP 1: SCAN
+    # STEP 1: DISCOVERY
     # -------------------------------------------------
-    classified_data = scan_and_classify(path)
+    classified_data = discover_files(path)
 
     # -------------------------------------------------
-    # SCAN VALIDATION
+    # DISCOVERY VALIDATION
     # -------------------------------------------------
-    # Scanner contract guarantees:
+    # Coordinator contract guarantees:
     # - dict on success
     # - None on failure
     if classified_data is None:
 
         log_error(
-            f"scan_failed | "
-            f"reason=scan_returned_none "
+            f"discovery_failed | "
+            f"reason=discovery_returned_none "
             f"path={path}"
         )
 
         return
 
     # -------------------------------------------------
-    # STEP 2: BUILD PLAN (DICT CONTRACT)
+    # STEP 2: BUILD EXECUTION PLAN
     # -------------------------------------------------
     plan = build_execution_plan(
         path,
@@ -60,56 +130,16 @@ def handle_move(path, dry_run, folder_prefix):
     )
 
     # -------------------------------------------------
-    # STRICT PLAN VALIDATION
+    # PLAN CONTRACT VALIDATION
     # -------------------------------------------------
     # Planner contract guarantees:
-    # {
-    #     "folders_to_create": [],
-    #     "operations": [],
-    #     "skipped": []
-    # }
-    if not isinstance(plan, dict):
+    # - ExecutionPlan object
+    if not isinstance(plan, ExecutionPlan):
 
         log_error(
             f"plan_failed | "
-            f"reason=invalid_plan_type "
+            f"reason=invalid_plan_contract "
             f"received_type={type(plan).__name__}"
-        )
-
-        return
-
-    # -------------------------------------------------
-    # REQUIRED CONTRACT VALIDATION
-    # -------------------------------------------------
-    required_keys = [
-        "operations",
-        "folders_to_create",
-        "skipped"
-    ]
-
-    for key in required_keys:
-
-        if key not in plan:
-
-            log_error(
-                f"plan_failed | "
-                f"reason=missing_plan_key "
-                f"key={key}"
-            )
-
-            return
-
-    # -------------------------------------------------
-    # OPERATIONS VALIDATION
-    # -------------------------------------------------
-    operations = plan["operations"]
-
-    if not isinstance(operations, list):
-
-        log_error(
-            f"plan_failed | "
-            f"reason=invalid_operations_type "
-            f"received_type={type(operations).__name__}"
         )
 
         return
@@ -119,15 +149,18 @@ def handle_move(path, dry_run, folder_prefix):
     # -------------------------------------------------
     log_info(
         f"plan_ready | "
-        f"operations={len(operations)} "
-        f"folders={len(plan['folders_to_create'])} "
-        f"skipped={len(plan['skipped'])}"
+        f"operations={len(plan.operations)} "
+        f"folders={len(plan.folders_to_create)} "
+        f"skipped={len(plan.skipped)}"
     )
 
     # -------------------------------------------------
     # STEP 3: EXECUTE PLAN
     # -------------------------------------------------
-    move_files(operations, dry_run)
+    move_files(
+        plan.operations,
+        dry_run
+    )
 
     log_info("move_complete")
 
@@ -135,7 +168,7 @@ def handle_move(path, dry_run, folder_prefix):
 # -------------------------------------------------
 # REPORT HANDLER
 # -------------------------------------------------
-def handle_report(path):
+def handle_report(path: str):
     """
     Executes reporting workflow.
     """
@@ -197,7 +230,10 @@ def main():
     # -------------------------------------------------
     # STARTUP
     # -------------------------------------------------
-    log_info("app_start | Smart File Organizer v0.7.0")
+    log_info(
+        "app_start | "
+        "Smart File Organizer v0.7.0"
+    )
 
     # -------------------------------------------------
     # PATH VALIDATION

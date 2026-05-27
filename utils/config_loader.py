@@ -1,3 +1,71 @@
+"""
+Smart File Organizer - Configuration Loading & Validation Layer
+
+This module is responsible for safely loading, validating,
+normalizing, and caching application configuration.
+
+Primary Responsibilities:
+- Load YAML configuration from disk
+- Validate minimal schema integrity
+- Apply safe fallback defaults
+- Normalize partial or malformed configuration
+- Guarantee downstream config completeness
+- Cache validated configuration for runtime reuse
+
+Architecture Role:
+This module acts as the centralized configuration authority
+for the application.
+
+Downstream modules should NEVER:
+- parse YAML directly
+- apply their own config defaults
+- validate root configuration structure
+
+Instead, all modules consume configuration exclusively through:
+    get_config()
+
+Configuration Guarantees:
+The module ensures that downstream systems always receive:
+- a dictionary-based config object
+- all required root keys
+- safe default values when necessary
+- normalized configuration structures
+
+Failure Handling Strategy:
+The system prioritizes controlled degradation over application failure.
+
+If configuration loading or validation fails:
+- safe defaults are automatically applied
+- structured errors are logged
+- pipeline execution remains operational
+
+Validation Philosophy:
+Validation is intentionally lightweight and defensive.
+
+The goal is NOT strict schema enforcement,
+but operational safety and downstream stability.
+
+Caching System:
+Configuration is cached after first successful load to:
+- reduce filesystem access
+- avoid repeated YAML parsing
+- provide consistent runtime configuration
+
+Observability:
+Structured logs provide visibility into:
+- config loading lifecycle
+- validation failures
+- fallback activation
+- schema normalization actions
+
+Design Principles:
+- Centralized configuration ownership
+- Defensive programming
+- Config-driven architecture
+- Safe fallback behavior
+- Minimal downstream assumptions
+- Runtime stability guarantees
+"""
 # -------------------------------------------------
 # IMPORTS
 # -------------------------------------------------

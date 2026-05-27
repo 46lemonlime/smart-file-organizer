@@ -1,123 +1,18 @@
-Phase 7 - v0.7.0 Reliability & Edge Case Hardening
-
-Implemented (FINAL COMMIT SUMMARY):
-- Standardize error handling across all modules
-  - unify log_error structure usage
-  - ensure consistent failure format across modules
-  - normalize structured exception metadata
-  - improve machine-readable logging consistency
-
-- Logging architecture stabilization
-  - standardized structured logging contract project-wide
-  - normalized automatic module context detection
-  - stabilized logging pipeline after refactor regressions
-  - improved exception formatting using key=value structure
-  - confirmed end-to-end execution traceability through logs
-
-- Improve file system edge case handling
-  - permission denied files
-  - locked / in-use files
-  - symlinks (safe handling strategy)
-  - hidden files
-  - very long file names
-  - unsupported or malformed file paths
-  - invalid operation payload protection
-  - invalid planner/schema protection
-
-- Refactor file system pipeline into modular architecture
-  - split original file_sorter responsibilities into dedicated modules
-  - file_scanner.py now handles orchestration only
-  - file_filter.py centralizes skip/filter logic
-  - file_classificator.py isolates extension classification logic
-  - execution_planner.py introduced as deterministic planning layer
-  - file_mover.py converted into pure execution engine
-  - centralized operation generation into a single planning pipeline
-  - ensured strict separation between:
-      - scanning
-      - planning
-      - execution
-  - improved maintainability, debuggability, and extensibility
-
-- Deterministic execution planning architecture
-  - introduced explicit execution plan abstraction
-  - planner now generates:
-      - folders_to_create
-      - operations
-      - skipped entries
-  - execution layer now consumes precomputed plans only
-  - removed decision-making responsibilities from execution layer
-  - improved future testability and execution reproducibility
-
-- updated requirements.txt
-  - confirmed no external dependencies required
-  - project now relies only on Python standard library
-
-- defined future /utils/helpers.py usage and architecture comments
-
-- Strengthen classification robustness
-  - handle missing or empty config categories safely
-  - ensure fallback behavior is always "others"
-  - validate unknown or unusual file extensions
-  - improve defensive validation for malformed scanner outputs
-
-- Validate dry-run parity with real execution
-  - ensured identical decision logic between modes
-  - ensured no divergence between dry-run and execution paths
-  - confirmed identical classification results in both modes
-  - dry-run now differs ONLY at filesystem side-effect layer
-  - validated deterministic execution ordering
-
-- Configuration reliability improvements
-  - improved config validation safety
-  - added defensive config fallback behavior
-  - stabilized runtime defaults for invalid configuration values
-  - improved structured config loading logs
-- Improve logging clarity for failures
-  - ensure error logs include:
-    - action
-    - file/path
-    - reason
-  - reduce ambiguous or generic error messages
-- Improve resilience of file operations
-    - partial failure handling
-    - pipeline continuation guarantees
-    - isolate per-file execution failures
-- Execution Resilience Enhancements (Completed)
-    - Implemented per-file execution isolation
-    - Ensured pipeline continuation on all failure points
-    - Added partial failure handling across execution layer
-- Observability Enhancements (non-blocking improvements):
-    - Added op_id tracking for operation traceability
-    - Introduced total_failed tracking for execution visibility
-- Review and tighten config edge-case handling
-  - missing keys fallback behavior
-  - malformed YAML safety
-  - empty category definitions
-
-To be implemented:
-- Final consistency pass
-  - ensure all modules follow same logging patterns
-  - ensure no raw print() usage remains
-  - ensure consistent error propagation behavior
-
-Version polishing:
-- ensure README and version history match v0.7.0 scope
-- confirm roadmap alignment (no drift between docs and implementation)
-
-Final safety checks:
-- run full dry-run on multiple folders (Downloads/Desktop test cases)
-- verify no crashes on empty directories
-- verify logs remain structured and consistent
-- verify no broken imports after changes
-
-Version consistency:
-- confirm version is set to v0.7.0 across README and CLI output
-- ensure git commit and tag alignment (no mismatch between code and docs)
-
-WIP Phase 8:
 # -------------------------------------------------
 # PHASE 8 — ARCHITECTURE HARDENING & EXTENSIBILITY
 # -------------------------------------------------
+
+Implemented (FINAL COMMIT SUMMARY):
+
+To be implemented:
+
+[ ] Reporting system foundation
+    - replace placeholder report_generator.py
+    - generate deterministic execution reports
+    - support dry-run and execution summaries
+    - export structured report data
+    - define report schema contract
+    - prepare extensible report formats
 
 [ ] Contract enforcement layer
     - validate scanner output schema
@@ -143,24 +38,23 @@ WIP Phase 8:
     - support future AI-based classification modules
 
 [ ] Unify Error Action Taxonomy
-    - Standardize all error action names across modules
-    - Replace loosely scoped actions like:
-        - move_failed
-        - scan_error
-        - plan_invalid
-    - With a consistent taxonomy structure
+    - standardize error action names across modules
+    - unify failure naming conventions
+    - remove inconsistent action patterns
 
 [ ] Introduce Structured Event Schema Layer
-    - Define a unified event format for all logs
-    - Move from ad-hoc key=value logs → structured event contract
-    - Proposed direction:
-        - event_type
-        - module
-        - action
-        - payload (key=value)
+    - define unified event structure
+    - standardize event metadata
+    - prepare future observability integrations
 
-Later you could:
+Version polishing:
+- confirm version is set to v0.8.0 across README and CLI output
+- ensure git commit and tag alignment
+- confirm roadmap alignment
 
-validate config schema more strictly
-enforce types
-add defaults centrally
+# -------------------------------------------------
+# PHASE 9 — STABILIZATION & INTERNAL CONSISTENCY
+# -------------------------------------------------
+- stricter config schema validation
+- centralized defaults system
+- runtime type enforcement

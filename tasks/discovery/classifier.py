@@ -1,20 +1,59 @@
-# -------------------------------------------------
-# FILE CLASSIFICATION MODULE
-# -------------------------------------------------
-# Responsibility:
-# - Config-driven file classification
-# - Extension normalization
-# - Safe fallback behavior
-# - Structured classification observability
-#
-# IMPORTANT:
-# This module guarantees deterministic classification behavior:
-# - never crashes
-# - always returns a valid category
-# - falls back to "others" safely
-#
-# Logging generated here is part of the structured
-# observability contract used across the pipeline.
+"""
+Smart File Organizer - File Classification Engine
+
+This module is responsible for assigning files to logical categories
+based on configurable extension rules defined in the system configuration.
+
+Primary Responsibilities:
+- Normalize file extensions for consistent comparison
+- Perform config-driven file classification
+- Provide deterministic category assignment
+- Ensure safe fallback behavior for all edge cases
+- Maintain structured observability for classification decisions
+
+Architecture Role:
+This module acts as the classification engine within the discovery
+pipeline, translating raw filenames into semantic categories used by
+downstream planning and execution layers.
+
+This module contains NO:
+- filesystem scanning logic
+- filtering logic
+- execution logic
+- file movement logic
+
+Classification Philosophy:
+- Fully deterministic behavior
+- Config-driven rule evaluation
+- Defensive handling of malformed inputs
+- Guaranteed fallback to "others"
+- No exception propagation to upstream layers
+
+Configuration Model:
+Categories are defined in config.yaml as:
+
+categories:
+  images:
+    extensions: [.png, .jpg]
+
+Each category maps to a list of file extensions used for matching.
+
+Failure Handling Strategy:
+- Invalid inputs are safely categorized as "others"
+- Malformed configuration entries are skipped with warnings
+- No runtime exceptions are propagated
+
+Observability:
+Classification decisions and config issues are logged using
+structured warning logs for debugging and traceability.
+
+Design Principles:
+- Deterministic mapping logic
+- Config-driven behavior
+- Defensive programming
+- Stable output guarantees
+- Strict separation of concerns
+"""
 
 # -------------------------------------------------
 # IMPORTS

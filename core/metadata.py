@@ -55,7 +55,7 @@ This module may later include:
 APP_NAME = "Smart File Organizer"
 
 # Semantic Versioning (SemVer)
-VERSION = "0.7.1"
+VERSION = "0.8.0"
 
 # Prefixed semantic version label
 VERSION_LABEL = f"v{VERSION}"

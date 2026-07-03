@@ -91,14 +91,17 @@ def scan_directory(
         RawDiscoveryDataset | None
     """
 
-    log_info(f"{SCAN_START} | path={path}")
+    log_info(f"{SCAN_START} | "
+             f"path={path}"
+    )
 
     try:
 
         items = os.listdir(path)
 
         log_info(
-            f"{SCAN_ITEMS} | count={len(items)}"
+            f"{SCAN_ITEMS} | "
+            f"count={len(items)}"
         )
 
         # -------------------------------------------------
@@ -120,7 +123,8 @@ def scan_directory(
             )
 
         log_info(
-            f"{SCAN_COMPLETE} | discovered={len(discovered_items)}"
+            f"{SCAN_COMPLETE} | "
+            f"discovered={len(discovered_items)}"
         )
 
         return discovered_items

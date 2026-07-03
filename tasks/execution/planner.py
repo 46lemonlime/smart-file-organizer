@@ -71,13 +71,17 @@ import os
 from utils.logger import log_info
 
 # Import shared contracts
-from contracts import (
+from core.contracts import (
     ClassifiedDiscovery,
     ExecutionOperation,
     ExecutionPlan,
     SkippedOperation
 )
 
+from core.events import (
+    PLAN_BUILD_START,
+    PLAN_BUILD_COMPLETE,
+)
 
 # -------------------------------------------------
 # PUBLIC: Build execution plan
@@ -94,7 +98,9 @@ def build_execution_plan(
         ExecutionPlan
     """
 
-    log_info("plan_build_start")
+    log_info(f"{PLAN_BUILD_START} | "
+             f"path={path}"
+        )
 
     # -------------------------------------------------
     # PLAN STRUCTURE
@@ -206,7 +212,7 @@ def build_execution_plan(
     # FINAL SUMMARY
     # -------------------------------------------------
     log_info(
-        f"plan_build_complete | "
+        f"{PLAN_BUILD_COMPLETE} | "
         f"folders={len(plan.folders_to_create)} "
         f"operations={len(plan.operations)} "
         f"skipped={len(plan.skipped)}"

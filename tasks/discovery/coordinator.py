@@ -9,7 +9,7 @@ Responsibilities:
 - Apply discovery filtering rules
 - Apply classification rules
 - Normalize classified discovery output
-- Enforce discovery contract consistency
+- Consume trusted discovery and configuration contracts
 - Provide discovery-level observability
 
 Architecture Role:
@@ -44,9 +44,10 @@ Design Principles:
 - Config-driven behavior
 - Structured observability
 
-Contract Enforcement:
-This module validates and normalizes discovery output before
-passing data into downstream execution systems.
+Contract Usage:
+This module consumes trusted discovery and configuration contracts
+before passing normalized classified discovery data into downstream
+execution systems.
 
 Output Contract:
 Returns classified discovery data using a dynamic
@@ -84,7 +85,9 @@ Structured logs are emitted throughout execution to provide:
 # -------------------------------------------------
 # IMPORTS
 # -------------------------------------------------
-from contracts import (
+from logging import config
+
+from core.contracts import (
     RawDiscoveryDataset,
     ClassifiedDiscovery,
     DiscoveredItem
@@ -97,6 +100,12 @@ from tasks.discovery.scanner import scan_directory
 from tasks.discovery.filter import should_skip_item
 from tasks.discovery.classifier import classify_file
 
+from core.events import (
+    DISCOVERY_START,
+    DISCOVERY_COMPLETE,
+    DISCOVERY_SKIP,
+    DISCOVERY_FALLBACK
+)
 
 # -------------------------------------------------
 # PUBLIC: Discovery pipeline
@@ -106,19 +115,18 @@ def discover_files(path: str) -> ClassifiedDiscovery | None:
     Executes full discovery pipeline.
     """
 
-    config = get_config() or {}
-
-    categories = config.get("categories") or {}
-
-    ignore_hidden = config.get(
-        "ignore_hidden_files",
-        True
+    log_info(
+    f"{DISCOVERY_START} | "
+    f"path={path}"
     )
 
-    ignore_symlinks = config.get(
-        "ignore_symlinks",
-        True
-    )
+    # -------------------------------------------------
+    # CONFIGURATION
+    # -------------------------------------------------
+    # get_config() returns a validated AppConfig contract.
+    # Downstream discovery components can trust its structure.
+    config = get_config()
+    categories = config.categories
 
     # -------------------------------------------------
     # RAW DISCOVERY
@@ -133,7 +141,7 @@ def discover_files(path: str) -> ClassifiedDiscovery | None:
     # -------------------------------------------------
     # DYNAMIC OUTPUT SCHEMA
     # -------------------------------------------------
-    # Categories are generated dynamically from config
+    # Categories are generated dynamically from AppConfig
     # to preserve config-driven architecture.
     result: ClassifiedDiscovery = {
         category: []
@@ -158,7 +166,7 @@ def discover_files(path: str) -> ClassifiedDiscovery | None:
         # -------------------------------------------------
         # CONTRACTED DISCOVERY ENTITY
         # -------------------------------------------------
-        # scanner.py guarantees DiscoveredItem structure.
+        # scanner.py returns validated DiscoveredItem objects.
         item: DiscoveredItem
 
         name = item.name
@@ -168,10 +176,8 @@ def discover_files(path: str) -> ClassifiedDiscovery | None:
         # FILTERING
         # -------------------------------------------------
         skip, reason = should_skip_item(
-            name,
-            full_path,
-            ignore_hidden,
-            ignore_symlinks
+            item, 
+            config
         )
 
         if skip:
@@ -179,7 +185,7 @@ def discover_files(path: str) -> ClassifiedDiscovery | None:
             skipped_total += 1
 
             log_info(
-                f"discovery_skip | "
+                f"{DISCOVERY_SKIP} | "
                 f"reason={reason} "
                 f"source_path={full_path}"
             )
@@ -208,12 +214,13 @@ def discover_files(path: str) -> ClassifiedDiscovery | None:
             # -------------------------------------------------
             # CLASSIFICATION FALLBACK SAFETY
             # -------------------------------------------------
-            # Prevent malformed classifier output from
-            # corrupting discovery contract structure.
+            # Defensive fallback boundary.
+            # Keeps discovery output stable even if classification
+            # behavior changes in the future.
             if category not in result:
 
                 log_warning(
-                    f"discovery_fallback | "
+                    f"{DISCOVERY_FALLBACK} | "
                     f"reason=unknown_category "
                     f"file={name} "
                     f"received_category={category}"
@@ -236,8 +243,8 @@ def discover_files(path: str) -> ClassifiedDiscovery | None:
     )
 
     log_info(
-        "discovery_complete | "
+        f"{DISCOVERY_COMPLETE} | "
         + " ".join(summary_parts)
     )
-
+  
     return result

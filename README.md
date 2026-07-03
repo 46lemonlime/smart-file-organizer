@@ -1,6 +1,6 @@
-# Smart File Organizer (v0.7.1)
+# Smart File Organizer (v0.8.0)
 
-A Python CLI tool that organizes files in a directory by scanning, classifying, planning, and executing structured file movements.
+A Python CLI application for deterministic file organization built around a contract-first architecture.
 
 It automates file management workflows such as file sorting, dry-run simulation, and structured folder generation, with a focus on safety, configurability, and extensibility.
 
@@ -12,6 +12,10 @@ python3 main.py move ~/Downloads
 **Dry-run (safe simulation)**
 ```bash
 python3 main.py move ~/Downloads --dry-run
+```
+**Generate report (future)**
+```bash
+python3 main.py report ~/Downloads
 ```
 ---
 
@@ -29,7 +33,24 @@ It follows a config-driven and deterministic execution design:
 6. Logs structured execution traces for observability and debugging
 
 The system prioritizes transparency, control, and reproducibility over raw automation speed.
-
+```
+Filesystem
+      │
+      ▼
+Scanner
+      │
+      ▼
+Filter
+      │
+      ▼
+Classifier
+      │
+      ▼
+Planner
+      │
+      ▼
+Executor
+```
 ---
 
 ## 2. ✨ Features
@@ -48,8 +69,8 @@ The system prioritizes transparency, control, and reproducibility over raw autom
    - discovery/coordinator.py → discovery pipeline orchestration
    - execution/planner.py → deterministic execution planning
    - execution/executor.py → filesystem execution layer
-   - reporting/reporter.py → future reporting subsystem
-   - contracts.py → shared typed pipeline contracts
+   - reporting/reporter.py → reporting subsystem (foundation)
+   - core/contracts.py → shared typed pipeline contracts
 - Configuration System
    - folder prefix control
    - hidden file handling
@@ -69,6 +90,9 @@ The system prioritizes transparency, control, and reproducibility over raw autom
 - Typed dataclass-based pipeline contracts
 - Discovery/execution layered architecture
 - Coordinator-based discovery pipeline
+- Contract-first architecture
+- Centralized configuration authority
+
 ---
 
 ## 3. 🧱 Architecture (Design & Structure)
@@ -82,8 +106,21 @@ The system prioritizes transparency, control, and reproducibility over raw autom
 
 ### 🧩 Contracts System
 
-The project uses centralized typed contracts (`contracts.py`)
-to define stable inter-module structures.
+The project uses centralized typed contracts located under:
+
+(`core/contracts.py`)
+
+These contracts define the stable interfaces exchanged between
+all major subsystems.
+
+Configuration loader produces validated AppConfig contracts.
+
+Discovery produces validated DiscoveredItem contracts.
+
+Execution consumes validated ExecutionPlan contracts.
+
+This establishes a contract-first architecture that minimizes
+runtime validation across the pipeline.
 
 These contracts:
 - reduce dynamic dictionary usage
@@ -91,12 +128,14 @@ These contracts:
 - strengthen type safety
 - centralize schema ownership
 
-Current contracts include:
+Current shared contracts include:
 - DiscoveredItem
 - ClassifiedDiscovery
 - ExecutionOperation
 - ExecutionPlan
 - SkippedOperation
+- CategoryConfig
+- AppConfig
 
 ### 🔎 Logging System (Observability Design)
 
@@ -138,7 +177,6 @@ smart-file-organizer/
 │
 ├── main.py
 ├── config.yaml
-├── contracts.py
 │
 ├── logs/
 │   └── smartorg.log
@@ -156,6 +194,11 @@ smart-file-organizer/
 │   │
 │   └── reporting/
 │       └── reporter.py
+│
+├── core/
+│   ├── events.py
+│   ├── contracts.py
+│   └── metadata.py
 │
 ├── utils/
 │   ├── logger.py
@@ -175,18 +218,16 @@ CLI Input
 main.py
    ↓
 discovery/coordinator.py
-   ↓
-discovery/scanner.py
-   ↓
-discovery/filter.py
-   ↓
-discovery/classifier.py
+   │
+   ├── discovery/scanner.py
+   ├── discovery/filter.py
+   └── discovery/classifier.py
    ↓
 execution/planner.py
    ↓
 execution/executor.py
    ↓
-Filesystem changes OR dry-run simulation
+Filesystem execution / Dry-run simulation
 ```
 
 #### report task
@@ -253,7 +294,19 @@ To resolve this:
 ---
 ## 5. ⚙️ Configuration System
 
-This project is now fully config-driven via `config.yaml`.
+The configuration system is centralized through
+`utils/config_loader.py`.
+
+The loader:
+
+- parses YAML
+- validates configuration
+- normalizes category definitions
+- builds validated AppConfig and CategoryConfig contracts
+- caches configuration
+- provides safe fallback configuration
+
+Downstream modules never access raw YAML directly.
 
 ### Key settings:
 
@@ -268,6 +321,7 @@ This project is now fully config-driven via `config.yaml`.
 ```yaml
 folder_prefix: smartorg
 ignore_hidden_files: true
+ignore_symlinks: true
 dry_run: false
 
 categories:
@@ -287,6 +341,7 @@ Smart File Organizer is a portfolio-grade automation engine demonstrating:
 - Safe execution systems
 - Modular design
 - Real-world file system automation
+- Scalable contract-driven software architecture
 
 ### 📌 Development Principles
 
@@ -294,6 +349,7 @@ Smart File Organizer is a portfolio-grade automation engine demonstrating:
 - Config-driven behavior (no hardcoded rules)
 - Controlled execution (dry-run support)
 - Separation of concerns
+- Contract-first architecture
 - Observable system behavior through structured logs
 
 ### 🧭 Roadmap
@@ -354,50 +410,65 @@ v0.4.0 and v0.5.0 were internal iterations merged into adjacent releases for ver
 * [x] Improve observability (structured logs, op_id, total_failed)
 * [x] Ensure full traceability (end-to-end structured logging)
 
-#### Phase 8 - v0.8.0 Observability & Architecture Refinement
-* [ ] Build reporting system foundation (deterministic execution reports)
-* [ ] Improve execution contract validation
-* [ ] Reduce module coupling
-* [ ] Improve module cohesion
-* [ ] Optimize directory scanning
-* [ ] Add global event schema layer
-* [ ] Unify error taxonomy
-* [ ] Improve op_id propagation
-* [ ] Standardize warning severity levels
-* [ ] Remove redundant defensive checks
+#### Phase 8 - v0.8.0 Architecture Hardening & Extensibility
 
-#### Phase 9 - v0.9.0 Polish & Developer Experience
-* [ ] Improve CLI usability (help text clarity and consistency)
-* [ ] Final documentation refinement pass (README + examples + structure)
-* [ ] Logging readability improvements (minor tweaks, no structural changes)
-* [ ] Full edge-case testing and stabilization pass
-* [ ] Pre-release bug fixing and behavioral consistency audit
+* [x] Layered discovery architecture
+* [x] Coordinator-based discovery pipeline
+* [x] Typed pipeline contracts
+* [x] Contract-first architecture
+* [x] Typed runtime configuration
+* [x] Configuration authority layer
+* [x] Discovery pipeline simplification
+* [x] Reduced module coupling
+* [x] Improved subsystem cohesion
+
+#### Phase 9 - v0.9.0 Product Maturity & Stabilization
+* [ ] Reporting subsystem
+* [ ] Observability improvements
+* [ ] Performance optimization
+* [ ] CLI & developer experience
+* [ ] Testing and stabilization
+* [ ] Documentation refinement
 
 #### Phase 10 - v1.0.0 Stable Release
-* [ ] Fully stable and production-ready execution pipeline
-* [ ] Fully validated config-driven system
-* [ ] Complete dry-run safety guarantees
-* [ ] Fully consistent logging and observability layer
-* [ ] Clean, documented, portfolio-ready architecture
-* [ ] Final cleanup of development artifacts and temporary logic
+* [ ] Production-ready execution pipeline
+* [ ] Stable configuration system
+* [ ] Complete execution safety guarantees
+* [ ] Fully consistent observability system
+* [ ] Portfolio-ready architecture and documentation
+* [ ] Final codebase cleanup and release preparation
 
 ### 🚧 Current Limitations
 
-- No undo / rollback system
+- Reporting subsystem not yet implemented
+- No undo / rollback mechanism
 - No operation history tracking
-- No GUI or dashboard interface
-- No advanced classification intelligence
-- No plugin system
+- No plugin-based classification system
+- No AI-assisted file classification
+- CLI only (no graphical interface)
 ---
 
 ## 7. 📜 Version History
+
+### v0.8.0
+
+- Contract-first architecture
+- Centralized typed contracts
+- Typed runtime configuration
+- Configuration authority layer
+- Coordinator-based discovery pipeline
+- Simplified filtering and classification
+- Reduced runtime validation
+- Improved module boundaries
+- Improved architectural consistency
+- Enhanced configuration observability
 
 ### v0.7.1
 - discovery subsystem refactor
 - layered discovery architecture introduced
 - scanner/coordinator responsibility split
 - typed dataclass contracts introduced
-- execution contracts centralized in contracts.py
+- execution contracts centralized in Core Contracts System
 - typed execution pipeline contracts
 - improved architectural separation of concerns
 - reduced module coupling
@@ -457,4 +528,6 @@ v0.4.0 and v0.5.0 were internal iterations merged into adjacent releases for ver
 **46lemonlime**
 GitHub: https://github.com/46lemonlime
 
-Creator, developer, and maintainer of this project.
+Creator, developer and maintainer.
+
+Built as a portfolio project focused on software architecture, maintainability and safe automation.

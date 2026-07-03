@@ -1,58 +1,56 @@
 """
 Smart File Organizer - File Classification Engine
 
-This module is responsible for assigning files to logical categories
-based on configurable extension rules defined in the system configuration.
+This module acts as the classification layer of the discovery subsystem.
 
-Primary Responsibilities:
-- Normalize file extensions for consistent comparison
-- Perform config-driven file classification
+Responsibilities:
+- Normalize file extensions
+- Classify files using config-driven rules
 - Provide deterministic category assignment
-- Ensure safe fallback behavior for all edge cases
-- Maintain structured observability for classification decisions
+- Preserve classification contract guarantees
 
 Architecture Role:
-This module acts as the classification engine within the discovery
-pipeline, translating raw filenames into semantic categories used by
-downstream planning and execution layers.
+This file intentionally contains NO logic related to:
+- filesystem scanning
+- file filtering
+- execution planning
+- filesystem mutations
+- pipeline orchestration
 
-This module contains NO:
-- filesystem scanning logic
-- filtering logic
-- execution logic
-- file movement logic
+Instead, it functions as a pure classification layer
+responsible for mapping filenames to semantic categories
+defined by the application configuration.
 
-Classification Philosophy:
-- Fully deterministic behavior
-- Config-driven rule evaluation
-- Defensive handling of malformed inputs
-- Guaranteed fallback to "others"
-- No exception propagation to upstream layers
+Classification Overview:
+filename
+→ extension normalization
+→ config-driven lookup
+→ category assignment
 
-Configuration Model:
-Categories are defined in config.yaml as:
+Input Contract:
+Consumes:
+- validated filename
+- validated CategoryConfig mapping
 
-categories:
-  images:
-    extensions: [.png, .jpg]
+Output Contract:
+Returns a category name.
 
-Each category maps to a list of file extensions used for matching.
-
-Failure Handling Strategy:
-- Invalid inputs are safely categorized as "others"
-- Malformed configuration entries are skipped with warnings
-- No runtime exceptions are propagated
-
-Observability:
-Classification decisions and config issues are logged using
-structured warning logs for debugging and traceability.
+Failure Contract:
+- consumes trusted pipeline contracts
+- returns "others" for unknown extensions
+- guarantees deterministic classification
 
 Design Principles:
-- Deterministic mapping logic
-- Config-driven behavior
-- Defensive programming
-- Stable output guarantees
-- Strict separation of concerns
+- deterministic classification
+- config-driven behavior
+- trusted pipeline contracts
+- contract-first architecture
+- stable output guarantees
+
+Observability:
+Classification is intentionally silent.
+Unknown extensions deterministically fall back
+to the "others" category.
 """
 
 # -------------------------------------------------
@@ -62,23 +60,19 @@ Design Principles:
 import os
 
 # Import internal project modules
-from utils.logger import log_warning
+from core.contracts import CategoryConfig
 
 
 # -------------------------------------------------
 # HELPER: Normalize extensions
 # -------------------------------------------------
-def normalize_extension(ext: str):
+def normalize_extension(
+    ext: str
+) -> str | None:
     """
-    Normalizes file extensions for consistent comparison.
-
-    Ensures:
-    - lowercase
-    - starts with '.'
-
-    Examples:
-    'JPG'  -> '.jpg'
-    '.PNG' -> '.png'
+    Normalizes file extensions for deterministic comparison.
+    Returns:
+        Normalized extension or None if invalid.
     """
 
     # -------------------------------------------------
@@ -105,159 +99,52 @@ def normalize_extension(ext: str):
 
 
 # -------------------------------------------------
-# CLASSIFICATION LOGIC (CONFIG DRIVEN)
+# PUBLIC: Classify file
 # -------------------------------------------------
-def classify_file(filename, categories: dict):
+def classify_file(
+    filename: str,
+    categories: dict[str, CategoryConfig]
+) -> str:
     """
-    Assigns a category to a file based on extension.
+    Assigns a category to a file using config-driven
+    extension matching.
 
-    Classification rules are defined in config.yaml
-
-    SAFETY GUARANTEES:
-    - never crashes
-    - handles malformed config safely
-    - handles malformed filenames safely
-    - always returns a valid category
-    - deterministic fallback behavior
-
-    FALLBACK:
-        unmatched files -> "others"
+    Returns:
+        Category name or "others".
     """
-
-    # -------------------------------------------------
-    # INPUT VALIDATION
-    # -------------------------------------------------
-    if not isinstance(filename, str):
-        log_warning(
-            f"classify_skip | "
-            f"reason=invalid_filename_type "
-            f"file={filename}"
-        )
-        return "others"
-
-    if not filename.strip():
-        log_warning(
-            f"classify_skip | "
-            f"reason=empty_filename "
-            f"file={filename}"
-        )
-        return "others"
 
     # -------------------------------------------------
     # EXTENSION EXTRACTION
     # -------------------------------------------------
-    try:
-        # NOTE:
-        # os.path.splitext may fail on malformed paths
-        ext = os.path.splitext(filename)[1]
-
-    except Exception:
-        log_warning(
-            f"classify_skip | "
-            f"reason=invalid_path "
-            f"file={filename}"
-        )
-        return "others"
+    # Filename is guaranteed by the discovery contract.
+    ext = os.path.splitext(filename)[1]
 
     normalized_ext = normalize_extension(ext)
 
     # -------------------------------------------------
     # NO EXTENSION FALLBACK
     # -------------------------------------------------
+    # Files without a valid extension are intentionally
+    # grouped into the generic "others" category.
     if not normalized_ext:
-        return "others"
-
-    # -------------------------------------------------
-    # CONFIG VALIDATION
-    # -------------------------------------------------
-    if not isinstance(categories, dict) or not categories:
-
-        log_warning(
-            f"classify_config_invalid | "
-            f"reason=missing_or_invalid_categories "
-            f"file={filename}"
-        )
-
         return "others"
 
     # -------------------------------------------------
     # CONFIG-DRIVEN LOOKUP
     # -------------------------------------------------
-    for category, config_entry in categories.items():
-
-        # -------------------------------------------------
-        # VALIDATE CATEGORY NAME
-        # -------------------------------------------------
-        if not isinstance(category, str):
-
-            log_warning(
-                f"classify_config_skip | "
-                f"reason=invalid_category_name "
-                f"category_name={category} "
-                f"file={filename}"
-            )
-
-            continue
-
-        # -------------------------------------------------
-        # VALIDATE CONFIG ENTRY
-        # -------------------------------------------------
-        if not isinstance(config_entry, dict):
-
-            log_warning(
-                f"classify_config_skip | "
-                f"reason=invalid_config_entry "
-                f"category={category} "
-                f"file={filename}"
-            )
-
-            continue
-
-        extensions = config_entry.get("extensions")
-
-        # -------------------------------------------------
-        # VALIDATE EXTENSIONS LIST
-        # -------------------------------------------------
-        if not isinstance(extensions, list):
-
-            log_warning(
-                f"classify_config_skip | "
-                f"reason=invalid_extensions_list "
-                f"category={category} "
-                f"file={filename}"
-            )
-
-            continue
+    for category_name, category_config in categories.items():
 
         # -------------------------------------------------
         # EXTENSION MATCHING
         # -------------------------------------------------
-        for ext_item in extensions:
+        for extension in category_config.extensions:
 
-            normalized_item = normalize_extension(ext_item)
-
-            # -------------------------------------------------
-            # INVALID EXTENSION ENTRY
-            # -------------------------------------------------
-            if not normalized_item:
-
-                log_warning(
-                    f"classify_config_skip | "
-                    f"reason=invalid_extension_value "
-                    f"category={category} "
-                    f"extension={ext_item} "
-                    f"file={filename}"
-                )
-
-                continue
-
-            # -------------------------------------------------
-            # MATCH FOUND
-            # -------------------------------------------------
-            if normalized_ext == normalized_item:
-                return category
-
+            if normalized_ext == normalize_extension(extension):
+                return category_name
+    
     # -------------------------------------------------
     # FALLBACK CATEGORY
     # -------------------------------------------------
+    # Unknown extensions are intentionally grouped
+    # into the generic "others" category.
     return "others"

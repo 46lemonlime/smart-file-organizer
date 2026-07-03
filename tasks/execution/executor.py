@@ -70,8 +70,22 @@ import shutil
 from utils.logger import log_info, log_warning, log_error
 
 # Import shared contracts
-from contracts import ExecutionOperation
+from core.contracts import ExecutionOperation
 
+# import events from core.events
+from core.events import (
+    MOVE_START,
+    MOVE_COMPLETE,
+    MOVE_SUMMARY,
+    MOVE_SUMMARY_FAILED,
+    MOVE_FAILED,
+    MOVE_SKIP,
+    FOLDER_CREATED,
+    FOLDER_CREATE_FAILED,
+    FOLDER_CREATE_SIMULATION,
+    FILE_MOVED,
+    FILE_MOVE_SIMULATION
+)
 
 # -------------------------------------------------
 # PUBLIC: Execute filesystem operations
@@ -90,7 +104,7 @@ def move_files(
     """
 
     log_info(
-        f"move_start | "
+        f"{MOVE_START} | "
         f"operations={len(operations)} "
         f"dry_run={dry_run}"
     )
@@ -129,7 +143,7 @@ def move_files(
                 if dry_run:
 
                     log_info(
-                        f"folder_create_simulation | "
+                        f"{FOLDER_CREATE_SIMULATION} | "
                         f"folder={folder_name}"
                     )
 
@@ -143,14 +157,14 @@ def move_files(
                         )
 
                         log_info(
-                            f"folder_created | "
+                            f"{FOLDER_CREATED} | "
                             f"folder={folder_name}"
                         )
 
                     except Exception as e:
 
                         log_error(
-                            f"folder_create_failed | "
+                            f"{FOLDER_CREATE_FAILED} | "
                             f"reason=os_error "
                             f"destination_path={destination_path}",
                             error=e
@@ -172,7 +186,7 @@ def move_files(
             if not os.path.exists(source_path):
 
                 log_warning(
-                    f"move_skip | "
+                    f"{MOVE_SKIP} | "
                     f"reason=file_missing "
                     f"file={file} "
                     f"source_path={source_path}"
@@ -186,7 +200,7 @@ def move_files(
             if dry_run:
 
                 log_info(
-                    f"file_move_simulation | "
+                    f"{FILE_MOVE_SIMULATION} | "
                     f"file={file} "
                     f"destination_path={destination_path}"
                 )
@@ -199,7 +213,7 @@ def move_files(
                 )
 
                 log_info(
-                    f"file_moved | "
+                    f"{FILE_MOVED} | "
                     f"file={file} "
                     f"destination_path={destination_path}"
                 )
@@ -221,7 +235,7 @@ def move_files(
             # This ensures ANY unexpected failure
             # does NOT break pipeline execution.
             log_error(
-                f"move_failed | "
+                f"{MOVE_FAILED} | "
                 f"reason=unexpected_operation_failure "
                 f"file={operation.file}",
                 error=e
@@ -240,16 +254,16 @@ def move_files(
         summary_parts.append(f"dry_run={dry_run}")
 
         log_info(
-            "move_summary | "
+            f"{MOVE_SUMMARY} | "
             + " ".join(summary_parts)
         )
 
     except Exception as e:
 
         log_error(
-            "move_summary_failed | "
+            f"{MOVE_SUMMARY_FAILED} | "
             "reason=summary_build_error",
             error=e
         )
 
-    log_info("move_complete")
+    log_info(MOVE_COMPLETE)

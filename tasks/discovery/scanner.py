@@ -17,29 +17,25 @@ This file intentionally contains NO business logic related to:
 - file classification
 - execution planning
 - filesystem mutations
-- pipeline coordination
+- pipeline orchestration
 
 Instead, it functions as a pure filesystem access layer
 responsible for exposing raw filesystem entities to higher-level
 discovery components.
 
-Discovery Overview:
+Discovery Pipeline:
 filesystem access
 → directory enumeration
 → metadata resolution
-→ normalized discovery contracts
+→ normalized discovery entities
+
+Input Contract:
+Consumes:
+- filesystem path
 
 Output Contract:
-Returns normalized discovery entities using shared typed contracts:
-
-[
-    DiscoveredItem(
-        name="photo.jpg",
-        full_path="/downloads/photo.jpg",
-        is_file=True,
-        is_directory=False
-    )
-]
+Returns a RawDiscoveryDataset containing normalized
+DiscoveredItem entities.
 
 Failure Contract:
 - returns None on scan failure
@@ -47,18 +43,19 @@ Failure Contract:
 - guarantees controlled failure behavior
 
 Design Principles:
-- Separation of concerns
-- Pure filesystem responsibility
-- Deterministic discovery behavior
-- Defensive filesystem handling
-- Reusable discovery foundation
-- Stable discovery contracts
+- separation of concerns
+- filesystem-only responsibility
+- deterministic discovery behavior
+- defensive filesystem handling
+- reusable discovery foundation
+- trusted pipeline contracts
+- stable discovery structures
 
 Observability:
 Structured logs are emitted throughout execution to provide:
-- discovery traceability
-- filesystem visibility
-- scan diagnostics
+- filesystem discovery traceability
+- scan visibility
+- discovery diagnostics
 - failure localization
 """
 
@@ -68,34 +65,46 @@ Structured logs are emitted throughout execution to provide:
 import os
 
 from utils.logger import log_info, log_error
-from contracts import DiscoveredItem
 
+from core.events import (
+    SCAN_START,
+    SCAN_ITEMS,
+    SCAN_COMPLETE,
+    SCAN_FAILED
+)
+
+from core.contracts import (
+    DiscoveredItem,
+    RawDiscoveryDataset
+)
 
 # -------------------------------------------------
 # PUBLIC: Scan directory
 # -------------------------------------------------
-def scan_directory(path: str) -> list[DiscoveredItem] | None:
+def scan_directory(
+    path: str
+) -> RawDiscoveryDataset | None:
     """
     Performs raw filesystem discovery.
 
     RETURNS:
-        list[DiscoveredItem] | None
+        RawDiscoveryDataset | None
     """
 
-    log_info(f"scan_start | path={path}")
+    log_info(f"{SCAN_START} | path={path}")
 
     try:
 
         items = os.listdir(path)
 
         log_info(
-            f"scan_items | count={len(items)}"
+            f"{SCAN_ITEMS} | count={len(items)}"
         )
 
         # -------------------------------------------------
         # NORMALIZED DISCOVERY OUTPUT
         # -------------------------------------------------
-        discovered_items = []
+        discovered_items: RawDiscoveryDataset = []
 
         for item in items:
 
@@ -111,7 +120,7 @@ def scan_directory(path: str) -> list[DiscoveredItem] | None:
             )
 
         log_info(
-            f"scan_complete | discovered={len(discovered_items)}"
+            f"{SCAN_COMPLETE} | discovered={len(discovered_items)}"
         )
 
         return discovered_items
@@ -119,7 +128,7 @@ def scan_directory(path: str) -> list[DiscoveredItem] | None:
     except Exception as e:
 
         log_error(
-            f"scan_failed | "
+            f"{SCAN_FAILED} | "
             f"reason=os_error "
             f"path={path}",
             error=e

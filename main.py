@@ -1,62 +1,61 @@
+# -------------------------------------------------
+# SMART FILE ORGANIZER - APPLICATION ENTRY POINT
+# -------------------------------------------------
 """
-Smart File Organizer - Main Application Entry Point
-
-This module acts as the orchestration layer of the application.
+This module serves as the application entry point and
+top-level orchestration layer.
 
 Responsibilities:
 - Parse CLI arguments
-- Load and propagate runtime configuration
+- Load application configuration
 - Validate execution context
 - Route supported tasks
-- Coordinate high-level pipeline execution
-- Enforce inter-module contract validation
-- Provide top-level execution observability
+- Coordinate high-level application flow
 
 Architecture Role:
-This file intentionally contains NO business logic related to:
+This file intentionally contains NO logic related to:
 - filesystem discovery
 - file filtering
-- classification
+- file classification
 - execution planning
 - filesystem mutations
+- reporting implementation
 
-Instead, it functions as the top-level orchestration layer
-responsible for coordinating execution flow between
-specialized pipeline modules.
+Instead, it functions as the composition root responsible
+for wiring together the application's subsystems.
 
-Pipeline Overview:
+Application Flow:
 CLI
 → configuration loading
-→ context validation
-→ discovery coordination
-→ execution planning
-→ filesystem execution
+→ execution context validation
+→ task routing
+→ subsystem execution
 
-Supported Tasks:
-- move:
-    Full organization pipeline execution
-- report:
-    Reporting workflow entrypoint (future expansion)
+Subsystems:
+- discovery:
+    Filesystem discovery and classification
+- execution:
+    Planning and filesystem mutations
+- reporting:
+    Execution reporting
 
 Design Principles:
+- minimal orchestration
 - separation of concerns
-- deterministic orchestration
-- explicit contract validation
-- config-driven execution
-- structured observability
-- failure isolation
+- contract-first architecture
+- deterministic application flow
+- centralized dependency composition
 
-Contract Enforcement:
-This module validates downstream module contracts before
-continuing execution to prevent cascading failures and
-improve debugging clarity.
+Failure Contract:
+- validates execution context before routing
+- prevents invalid task execution
+- delegates subsystem failures to their owners
 
 Observability:
 Structured logs are emitted throughout execution to provide:
-- execution traceability
-- operational visibility
-- pipeline diagnostics
-- failure localization
+- application lifecycle visibility
+- execution context diagnostics
+- task routing traceability
 """
 
 # -------------------------------------------------
@@ -75,9 +74,24 @@ from tasks.reporting.reporter import generate_report
 from utils.logger import log_info, log_error
 from utils.config_loader import get_config
 
-# Import shared contracts
-from contracts import ExecutionPlan
+from core.metadata import (
+    APP_BANNER,
+    APP_DESCRIPTION,
+    SUPPORTED_TASKS
+)
 
+from core.events import (
+    APP_START,
+    EXECUTION_CONTEXT,
+    PATH_INVALID,
+    TASK_UNKNOWN,
+    DISCOVERY_FAILED,
+    PLAN_READY,
+    MOVE_START,
+    MOVE_COMPLETE,
+    REPORT_START,
+    REPORT_COMPLETE
+)
 
 # -------------------------------------------------
 # TASK HANDLERS
@@ -86,18 +100,15 @@ def handle_move(
     path: str,
     dry_run: bool,
     folder_prefix: str
-):
+) -> None:
     """
     Executes the full organization pipeline.
-
-    PIPELINE:
-    1. Discover filesystem entities
-    2. Classify discovered files
-    3. Build deterministic execution plan
-    4. Execute filesystem operations
     """
 
-    log_info(f"move_start | dry_run={dry_run}")
+    log_info(
+        f"{MOVE_START} | "
+        f"dry_run={dry_run}"
+    )
 
     # -------------------------------------------------
     # STEP 1: DISCOVERY
@@ -107,13 +118,10 @@ def handle_move(
     # -------------------------------------------------
     # DISCOVERY VALIDATION
     # -------------------------------------------------
-    # Coordinator contract guarantees:
-    # - dict on success
-    # - None on failure
     if classified_data is None:
 
         log_error(
-            f"discovery_failed | "
+            f"{DISCOVERY_FAILED} | "
             f"reason=discovery_returned_none "
             f"path={path}"
         )
@@ -130,25 +138,10 @@ def handle_move(
     )
 
     # -------------------------------------------------
-    # PLAN CONTRACT VALIDATION
-    # -------------------------------------------------
-    # Planner contract guarantees:
-    # - ExecutionPlan object
-    if not isinstance(plan, ExecutionPlan):
-
-        log_error(
-            f"plan_failed | "
-            f"reason=invalid_plan_contract "
-            f"received_type={type(plan).__name__}"
-        )
-
-        return
-
-    # -------------------------------------------------
     # PLAN SUMMARY
     # -------------------------------------------------
     log_info(
-        f"plan_ready | "
+        f"{PLAN_READY} | "
         f"operations={len(plan.operations)} "
         f"folders={len(plan.folders_to_create)} "
         f"skipped={len(plan.skipped)}"
@@ -162,43 +155,46 @@ def handle_move(
         dry_run
     )
 
-    log_info("move_complete")
+    log_info(
+        f"{MOVE_COMPLETE} | "
+        f"dry_run={dry_run}"
+    )
 
 
 # -------------------------------------------------
 # REPORT HANDLER
 # -------------------------------------------------
-def handle_report(path: str):
+def handle_report(path: str) -> None:
     """
     Executes reporting workflow.
     """
 
-    log_info("report_start")
+    log_info(
+        f"{REPORT_START} | "
+        f"path={path}"
+    )
 
     generate_report(path)
 
-    log_info("report_complete")
+    log_info(
+        f"{REPORT_COMPLETE} | "
+        f"path={path}"
+    )
 
 
 # -------------------------------------------------
 # MAIN
 # -------------------------------------------------
-def main():
+def main() -> None:
     """
     CLI entry point.
-
-    Responsibilities:
-    - Parse CLI arguments
-    - Load configuration
-    - Validate execution context
-    - Route tasks
     """
 
     # -------------------------------------------------
     # CLI SETUP
     # -------------------------------------------------
     parser = argparse.ArgumentParser(
-        description="Smart File Organizer CLI Tool"
+        description=APP_DESCRIPTION
     )
 
     parser.add_argument("task", type=str)
@@ -215,24 +211,18 @@ def main():
     # -------------------------------------------------
     # CONFIG
     # -------------------------------------------------
-    config = get_config() or {}
+    config = get_config()
 
-    dry_run = args.dry_run or config.get(
-        "dry_run",
-        False
-    )
+    dry_run = args.dry_run or config.dry_run
 
-    folder_prefix = config.get(
-        "folder_prefix",
-        "smartorg"
-    )
+    folder_prefix = config.folder_prefix
 
     # -------------------------------------------------
     # STARTUP
     # -------------------------------------------------
     log_info(
-        "app_start | "
-        "Smart File Organizer v0.7.0"
+        f"{APP_START} | "
+        f"banner={APP_BANNER}"
     )
 
     # -------------------------------------------------
@@ -241,7 +231,7 @@ def main():
     if not os.path.exists(args.path):
 
         log_error(
-            f"path_invalid | "
+            f"{PATH_INVALID} | "
             f"reason=path_not_found "
             f"path={args.path}"
         )
@@ -249,13 +239,27 @@ def main():
         return
 
     # -------------------------------------------------
-    # TASK RESOLUTION
+    # TASK VALIDATION
     # -------------------------------------------------
     task = args.task.lower()
 
+    if task not in SUPPORTED_TASKS:
+
+        log_error(
+            f"{TASK_UNKNOWN} | "
+            f"reason=unsupported_task "
+            f"task={args.task}"
+        )
+
+        return
+
+    # -------------------------------------------------
+    # EXECUTION CONTEXT
+    # -------------------------------------------------
     log_info(
-        f"context_task={task} | "
-        f"path={args.path} | "
+        f"{EXECUTION_CONTEXT} | "
+        f"task={task} "
+        f"path={args.path} "
         f"dry_run={dry_run}"
     )
 
@@ -273,14 +277,6 @@ def main():
     elif task == "report":
 
         handle_report(args.path)
-
-    else:
-
-        log_error(
-            f"task_unknown | "
-            f"reason=unsupported_task "
-            f"task={args.task}"
-        )
 
 
 # -------------------------------------------------

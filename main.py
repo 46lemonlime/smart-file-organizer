@@ -93,7 +93,7 @@ from core.events import (
     APP_START,
     EXECUTION_CONTEXT,
     PATH_INVALID,
-    REPORT_NOT_FOUND,
+    REPORT_SKIPPED,
     TASK_UNKNOWN,
     DISCOVERY_FAILED,
     PLAN_READY,
@@ -199,9 +199,9 @@ def handle_move(
     # Reports are generated automatically for every move
     # execution, but they are not rendered automatically.
     save_execution_report(
-    execution_report,
-    reports_directory,
-    execution_reports_directory
+        execution_report,
+        reports_directory,
+        execution_reports_directory
     )
 
     log_info(
@@ -235,7 +235,7 @@ def handle_report(
     report = load_latest_execution_report(
         reports_directory,
         execution_reports_directory
-        )
+    )
 
     # -------------------------------------------------
     # REPORT AVAILABILITY VALIDATION
@@ -243,7 +243,7 @@ def handle_report(
     if report is None:
 
         log_info(
-            f"{REPORT_NOT_FOUND} | "
+            f"{REPORT_SKIPPED} | "
             "reason=no_persisted_reports"
         )
 

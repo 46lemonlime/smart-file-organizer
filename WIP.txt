@@ -27,6 +27,15 @@ Implemented (FINAL COMMIT SUMMARY):
     - removed hardcoded reporting paths
     - reporting persistence is now configuration-driven
 
+[x] Observability Improvements
+    - unified event taxonomy
+    - standardized structured event naming
+    - clarified log ownership across modules
+    - separated pipeline lifecycle events
+    - improved planning diagnostics
+    - normalized configuration logging
+    - removed obsolete events
+    - eliminated duplicated reporting events
 
 
 Planned to be implemented:
@@ -46,12 +55,6 @@ Planned to be implemented:
     - introduce plugin contracts
     - prepare AI classification contracts
     - expand typed contract coverage
-
-[ ] Observability Improvements
-    - unify event taxonomy
-    - standardize structured event metadata
-    - improve execution diagnostics
-    - normalize remaining logging patterns
 
 [ ] Performance Optimization
     - reduce repeated filesystem operations

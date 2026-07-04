@@ -79,6 +79,7 @@ from core.contracts import (
 )
 
 from core.events import (
+    PLAN_BUILD_EMPTY,
     PLAN_BUILD_START,
     PLAN_BUILD_COMPLETE,
 )
@@ -211,6 +212,13 @@ def build_execution_plan(
     # -------------------------------------------------
     # FINAL SUMMARY
     # -------------------------------------------------
+    if not plan.operations:
+        
+        log_info(
+            f"{PLAN_BUILD_EMPTY} | "
+            f"reason=no_operations "
+            f"path={path}"
+        )
     log_info(
         f"{PLAN_BUILD_COMPLETE} | "
         f"folders={len(plan.folders_to_create)} "

@@ -63,7 +63,7 @@ DESIGN PRINCIPLES:
 import os
 import yaml
 
-from utils.logger import log_info, log_error
+from utils.logger import log_info, log_warning, log_error
 
 from core.events import (
     CONFIG_GET_START,
@@ -133,7 +133,10 @@ def _validate_config(config: dict) -> AppConfig:
     """
 
     if not isinstance(config, dict):
-        log_error(f"{CONFIG_INVALID} | reason=invalid_root_type")
+        log_error(
+            f"{CONFIG_INVALID} | "
+            "reason=invalid_root_type"
+        )
         return _build_default_config()
 
     # -------------------------------------------------
@@ -151,27 +154,63 @@ def _validate_config(config: dict) -> AppConfig:
 
     # type safety (IMPORTANT)
     if not isinstance(folder_prefix, str):
-        log_error(f"{CONFIG_INVALID} | key=folder_prefix")
+
+        log_error(
+            f"{CONFIG_INVALID} | "
+            f"key=folder_prefix "
+            f"reason=not_string"
+        )
+
         folder_prefix = "smartorg"
 
     if not isinstance(dry_run, bool):
-        log_error(f"{CONFIG_INVALID} | key=dry_run")
+
+        log_error(
+            f"{CONFIG_INVALID} | "
+            f"key=dry_run "
+            f"reason=not_boolean"
+        )
+
         dry_run = False
 
     if not isinstance(ignore_hidden_files, bool):
-        log_error(f"{CONFIG_INVALID} | key=ignore_hidden_files")
+
+        log_error(
+            f"{CONFIG_INVALID} | "
+            f"key=ignore_hidden_files "
+            f"reason=not_boolean"
+        )
+
         ignore_hidden_files = True
 
     if not isinstance(ignore_symlinks, bool):
-        log_error(f"{CONFIG_INVALID} | key=ignore_symlinks")
+
+        log_error(
+            f"{CONFIG_INVALID} | "
+            f"key=ignore_symlinks "
+            f"reason=not_boolean"
+        )
+
         ignore_symlinks = True
 
     if not isinstance(reports_directory, str):
-        log_error(f"{CONFIG_INVALID} | key=reports_directory")
+
+        log_error(
+            f"{CONFIG_INVALID} | "
+            f"key=reports_directory "
+            f"reason=not_string"
+        )
+
         reports_directory = "reports"
 
     if not isinstance(execution_reports_directory, str):
-        log_error(f"{CONFIG_INVALID} | key=execution_reports_directory")
+
+        log_error(
+            f"{CONFIG_INVALID} | "
+            f"key=execution_reports_directory "
+            f"reason=not_string"
+        )
+
         execution_reports_directory = "executions"
 
     # -----------------------------
@@ -188,44 +227,72 @@ def _validate_config(config: dict) -> AppConfig:
             # VALIDATE CATEGORY NAME
             # -------------------------------------------------
             if not isinstance(name, str):
-                log_error(f"{CONFIG_INVALID} | reason=invalid_category_name")
+
+                log_error(
+                    f"{CONFIG_INVALID} | "
+                    f"key=categories "
+                    f"reason=invalid_category_name"
+                )
+
                 continue
 
             # -------------------------------------------------
             # VALIDATE CATEGORY STRUCTURE
             # -------------------------------------------------
             if not isinstance(cat, dict):
+
                 log_error(
-                    f"{CONFIG_INVALID} | category={name} reason=not_dict"
+                    f"{CONFIG_INVALID} | "
+                    f"key=categories "
+                    f"category={name} "
+                    f"reason=invalid_category_structure"
                 )
+
                 continue
 
             try:
+
                 categories[name] = CategoryConfig(
                     description=cat.get("description", ""),
                     extensions=cat.get("extensions", [])
                 )
 
             except Exception as e:
+
                 log_error(
-                    f"{CONFIG_INVALID} | category={name}",
+                    f"{CONFIG_INVALID} | "
+                    f"key=categories "
+                    f"category={name} "
+                    f"reason=invalid_category_structure",
                     error=e
                 )
+
                 continue
 
     else:
-        log_error(f"{CONFIG_INVALID} | reason=categories_not_dict")
+
+        log_error(
+            f"{CONFIG_INVALID} | "
+            f"key=categories "
+            f"reason=categories_not_dict"
+        )
 
     # -------------------------------------------------
     # CONFIG WARNING (EMPTY CATEGORIES)
     # -------------------------------------------------
     if not categories:
-        log_error(f"{CONFIG_WARNING} | reason=empty_categories")
+
+        log_warning(
+            f"{CONFIG_WARNING} | "
+            f"key=categories "
+            f"reason=empty_categories"
+        )
 
     # -------------------------------------------------
     # BUILD FINAL APP CONFIG (SAFE GUARD)
     # -------------------------------------------------
     try:
+
         return AppConfig(
             folder_prefix=folder_prefix,
             dry_run=dry_run,
@@ -237,7 +304,13 @@ def _validate_config(config: dict) -> AppConfig:
         )
 
     except Exception as e:
-        log_error(f"{CONFIG_FALLBACK_USED} | reason=appconfig_invalid", error=e)
+
+        log_error(
+            f"{CONFIG_FALLBACK_USED} | "
+            f"reason=appconfig_invalid",
+            error=e
+        )
+
         return _build_default_config()
 
 
@@ -246,25 +319,49 @@ def _validate_config(config: dict) -> AppConfig:
 # -------------------------------------------------
 def _load_yaml() -> dict | None:
     try:
-        log_info(f"{CONFIG_LOAD_START} | path={CONFIG_PATH}")
+
+        log_info(
+            f"{CONFIG_LOAD_START} | "
+            f"path={CONFIG_PATH}"
+        )
 
         with open(CONFIG_PATH, "r") as file:
             config = yaml.safe_load(file)
 
-        log_info(f"{CONFIG_LOAD_SUCCESS} | path={CONFIG_PATH}")
+        log_info(
+            f"{CONFIG_LOAD_SUCCESS} | "
+            f"path={CONFIG_PATH}"
+        )
 
         return config
 
     except FileNotFoundError:
-        log_error(f"{CONFIG_LOAD_FAILED} | reason=file_not_found")
+
+        log_error(
+            f"{CONFIG_LOAD_FAILED} | "
+            f"reason=file_not_found"
+        )
+
         return None
 
     except yaml.YAMLError as e:
-        log_error(f"{CONFIG_LOAD_FAILED} | reason=yaml_error", error=e)
+
+        log_error(
+            f"{CONFIG_LOAD_FAILED} | "
+            f"reason=yaml_error",
+            error=e
+        )
+
         return None
 
     except Exception as e:
-        log_error(f"{CONFIG_LOAD_FAILED} | reason=unexpected_error", error=e)
+
+        log_error(
+            f"{CONFIG_LOAD_FAILED} | "
+            f"reason=unexpected_error",
+            error=e
+        )
+
         return None
 
 
@@ -277,7 +374,10 @@ def get_config() -> AppConfig:
     if _config_cache is not None:
         return _config_cache
 
-    log_info(f"{CONFIG_GET_START} | path={CONFIG_PATH}")
+    log_info(
+        f"{CONFIG_GET_START} | "
+        f"path={CONFIG_PATH}"
+    )
 
     raw_config = _load_yaml()
 
@@ -285,14 +385,23 @@ def get_config() -> AppConfig:
     # FALLBACK HANDLING
     # -----------------------------
     if raw_config is None:
-        log_error(f"{CONFIG_FALLBACK_USED} | reason=load_failed")
+
+        log_error(
+            f"{CONFIG_FALLBACK_USED} | "
+            f"reason=load_failed"
+        )
+
         _config_cache = _build_default_config()
+
         return _config_cache
 
     config = _validate_config(raw_config)
 
     _config_cache = config
 
-    log_info(f"{CONFIG_GET_COMPLETE} | path={CONFIG_PATH}")
+    log_info(
+        f"{CONFIG_GET_COMPLETE} | "
+        f"path={CONFIG_PATH}"
+    )
 
     return _config_cache

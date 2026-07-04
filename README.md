@@ -85,12 +85,12 @@ Executor
    - Failure isolation per file operation
 - Observability System
    - Structured logging (key=value format)
-   - Execution traceability across all modules
-   - Move summary logs (total + per-category breakdown)
+   - Centralized event taxonomy (core/events.py)
+   - Module-owned logging responsibilities
+   - Execution traceability across the complete pipeline
+   - Deterministic event naming
+   - Structured execution summaries
    - Failure visibility with structured metadata
-   - Optional execution tracing enhancements:
-      - op_id tracking
-      - total_failed tracking
 - Reporting System
    - automatic report generation
    - deterministic JSON persistence
@@ -138,13 +138,22 @@ These contracts:
 - centralize schema ownership
 
 Current shared contracts include:
+
+- AppConfig
+- CategoryConfig
+<br>
+
+- DiscoveryReport
+- PlanningReport
+- ExecutionSummaryReport
+- ExecutionReport
+<br>
+
 - DiscoveredItem
 - ClassifiedDiscovery
 - ExecutionOperation
 - ExecutionPlan
 - SkippedOperation
-- CategoryConfig
-- AppConfig
 
 ### 🔎 Logging System (Observability Design)
 
@@ -247,9 +256,9 @@ reporting/generator.py
    ↓
 reporting/saver.py
    ↓
-ExecutionReport (.json)
-   ↓
 Filesystem execution / Dry-run simulation
+   ↓
+ExecutionReport (.json)
 ```
 
 #### report task
@@ -448,7 +457,9 @@ v0.4.0 and v0.5.0 were internal iterations merged into adjacent releases for ver
 
 #### Phase 9 - v0.9.0 Product Maturity & Stabilization
 * [x] Reporting subsystem
-* [ ] Observability improvements
+* [x] Reporting architecture
+* [x] Configuration-driven report persistence
+* [x] Observability improvements
 * [ ] Performance optimization
 * [ ] CLI & developer experience
 * [ ] Testing and stabilization
@@ -477,12 +488,16 @@ v0.4.0 and v0.5.0 were internal iterations merged into adjacent releases for ver
 ### v0.9.0 (in progress)
 
 - Complete reporting subsystem
-- Report generator
-- Report persistence
-- Report loader
+- Report generation pipeline
+- Report persistence layer
+- Report loading layer
 - CLI report renderer
-- Configuration-driven report storage
-- ExecutionReport pipeline
+- Configuration-driven report persistence
+- Reporting contracts
+- Separation of reporting responsibilities
+- Centralized event taxonomy
+- Improved observability consistency
+- Composition-root dependency injection
 
 ### v0.8.0
 

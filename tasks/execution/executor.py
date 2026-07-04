@@ -88,7 +88,7 @@ from core.contracts import (
 # import events from core.events
 from core.events import (
     MOVE_START,
-    MOVE_COMPLETE,
+    MOVE_EXECUTION_COMPLETE,
     MOVE_SUMMARY,
     MOVE_SUMMARY_FAILED,
     MOVE_FAILED,
@@ -345,6 +345,6 @@ def move_files(
             error=e
         )
 
-    log_info(MOVE_COMPLETE)
+    log_info(MOVE_EXECUTION_COMPLETE)
 
     return execution_summary

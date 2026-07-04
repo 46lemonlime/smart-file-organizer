@@ -88,8 +88,6 @@ Structured logs are emitted throughout execution to provide:
 # -------------------------------------------------
 # IMPORTS
 # -------------------------------------------------
-from logging import config
-
 from core.contracts import (
     RawDiscoveryDataset,
     ClassifiedDiscovery,

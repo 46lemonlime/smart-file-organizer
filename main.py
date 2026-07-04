@@ -6,14 +6,16 @@ This module serves as the application entry point and
 top-level orchestration layer.
 
 Responsibilities:
-- Parse CLI arguments
+- Consume parsed CLI arguments
 - Load application configuration
 - Validate execution context
 - Route supported tasks
 - Coordinate high-level application flow
+- Inject runtime dependencies into subsystems
 
 Architecture Role:
 This file intentionally contains NO logic related to:
+- CLI parser construction
 - filesystem discovery
 - file filtering
 - file classification
@@ -24,14 +26,19 @@ This file intentionally contains NO logic related to:
 Instead, it functions as the composition root responsible
 for wiring together the application's subsystems.
 
+CLI parsing is delegated to cli/parser.py.
+
 Application Flow:
-CLI
+CLI parsing
 → configuration loading
+→ dependency injection
 → execution context validation
 → task routing
 → subsystem execution
 
 Subsystems:
+- cli:
+    Command-line parsing and argument validation
 - discovery:
     Filesystem discovery and classification
 - execution:
@@ -45,6 +52,7 @@ Design Principles:
 - contract-first architecture
 - deterministic application flow
 - centralized dependency composition
+- explicit dependency injection
 
 Failure Contract:
 - validates execution context before routing
@@ -62,7 +70,6 @@ Structured logs are emitted throughout execution to provide:
 # IMPORTS
 # -------------------------------------------------
 # Import required libraries
-import argparse
 import os
 
 # Import modules from the project
@@ -71,6 +78,8 @@ from tasks.discovery.coordinator import discover_files
 from tasks.execution.executor import move_files
 from tasks.reporting.loader import load_latest_execution_report
 from tasks.reporting.reporter import render_execution_report
+
+from cli.parser import parse_args
 
 from tasks.reporting.generator import (
     build_discovery_report,
@@ -84,17 +93,13 @@ from utils.logger import log_info, log_error
 from utils.config_loader import get_config
 
 from core.metadata import (
-    APP_BANNER,
-    APP_DESCRIPTION,
-    SUPPORTED_TASKS
+    APP_BANNER
 )
 
 from core.events import (
     APP_START,
     EXECUTION_CONTEXT,
-    PATH_INVALID,
     REPORT_SKIPPED,
-    TASK_UNKNOWN,
     DISCOVERY_FAILED,
     PLAN_READY,
     MOVE_START,
@@ -247,8 +252,6 @@ def handle_report(
             "reason=no_persisted_reports"
         )
 
-        log_info(REPORT_COMPLETE)
-
         return
 
     # -------------------------------------------------
@@ -272,41 +275,14 @@ def main() -> None:
     CLI entry point.
     """
 
-    # -------------------------------------------------
-    # CLI SETUP
-    # -------------------------------------------------
-    parser = argparse.ArgumentParser(
-        description=APP_DESCRIPTION
-    )
-
-    parser.add_argument("task", type=str)
-
-    # -------------------------------------------------
-    # OPTIONAL PATH ARGUMENT
-    # -------------------------------------------------
-    # The move task requires a path.
-    # The report task loads the latest persisted report and
-    # therefore does not require a path.
-    parser.add_argument(
-        "path",
-        type=str,
-        nargs="?"
-    )
-
-    parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Simulate filesystem changes"
-    )
-
-    args = parser.parse_args()
+    args = parse_args()
 
     # -------------------------------------------------
     # CONFIG
     # -------------------------------------------------
     config = get_config()
 
-    dry_run = args.dry_run or config.dry_run
+    dry_run = getattr(args, "dry_run", False) or config.dry_run
 
     folder_prefix = config.folder_prefix
 
@@ -325,53 +301,16 @@ def main() -> None:
     )
 
     # -------------------------------------------------
-    # TASK VALIDATION
-    # -------------------------------------------------
-    task = args.task.lower()
-
-    if task not in SUPPORTED_TASKS:
-
-        log_error(
-            f"{TASK_UNKNOWN} | "
-            f"reason=unsupported_task "
-            f"task={args.task}"
-        )
-
-        return
-
-    # -------------------------------------------------
-    # MOVE PATH VALIDATION
-    # -------------------------------------------------
-    # Only move requires a filesystem path.
-    # Report reads persisted reports and does not require
-    # a target filesystem path.
-    if task == "move" and args.path is None:
-
-        log_error(
-            f"{PATH_INVALID} | "
-            f"reason=path_required "
-            f"task={task}"
-        )
-
-        return
-
-    if task == "move" and not os.path.exists(args.path):
-
-        log_error(
-            f"{PATH_INVALID} | "
-            f"reason=path_not_found "
-            f"path={args.path}"
-        )
-
-        return
-
-    # -------------------------------------------------
     # EXECUTION CONTEXT
     # -------------------------------------------------
+    task = args.task
+
+    path = getattr(args, "path", None)
+
     log_info(
         f"{EXECUTION_CONTEXT} | "
         f"task={task} "
-        f"path={args.path} "
+        f"path={path} "
         f"dry_run={dry_run}"
     )
 
@@ -381,7 +320,7 @@ def main() -> None:
     if task == "move":
 
         handle_move(
-            args.path,
+            path,
             dry_run,
             folder_prefix,
             reports_directory,

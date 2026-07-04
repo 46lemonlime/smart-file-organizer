@@ -37,6 +37,15 @@ Implemented (FINAL COMMIT SUMMARY):
     - removed obsolete events
     - eliminated duplicated reporting events
 
+[x] CLI & Developer Experience
+    - extracted CLI parsing into dedicated cli/parser.py module
+    - introduced argparse subcommands
+    - added dedicated move command
+    - added dedicated report command
+    - improved command-specific help output
+    - moved --dry-run under move command
+    - removed manual task validation from main.py
+    - kept main.py focused as composition root
 
 Planned to be implemented:
 
@@ -62,12 +71,6 @@ Planned to be implemented:
     - benchmark pipeline execution
     - evaluate lazy iteration strategies
     - profile execution bottlenecks
-
-[ ] CLI & Developer Experience
-    - improve CLI help output
-    - refine developer-facing messages
-    - improve project ergonomics
-    - polish command-line interface
 
 [ ] Testing & Stabilization
     - edge-case validation

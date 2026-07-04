@@ -55,52 +55,35 @@ Executor
 ---
 
 ## 2. ✨ Features
-- CLI-based interface for task execution
-- Config-driven system (config.yaml)
-- Modular pipeline architecture
-- Deterministic execution planning layer
-- Dry-run simulation mode
-- Defensive file system execution engine
-- Structured file classification system
-- Folder prefix-based organization system (smartorg-*)
-- Core Modules:
-   - discovery/scanner.py → raw filesystem discovery
-   - discovery/filter.py → skip/filter rules engine
-   - discovery/classifier.py → config-driven classification
-   - discovery/coordinator.py → discovery pipeline orchestration
-   - execution/planner.py → deterministic execution planning
-   - execution/executor.py → filesystem execution layer
-   - core/contracts.py → shared typed pipeline contracts
-   - reporting/generator.py → execution report generation
-   - reporting/saver.py → report persistence
-   - reporting/loader.py → persisted report loading
-   - reporting/reporter.py → CLI report presentation
-- Configuration System
-   - folder prefix control
-   - hidden file handling
-   - classification rules (YAML-driven)
-- Execution Safety
-   - Dry-run mode for safe previews
-   - Strict separation of planning vs execution
-   - Failure isolation per file operation
-- Observability System
-   - Structured logging (key=value format)
-   - Centralized event taxonomy (core/events.py)
-   - Module-owned logging responsibilities
-   - Execution traceability across the complete pipeline
-   - Deterministic event naming
-   - Structured execution summaries
-   - Failure visibility with structured metadata
-- Reporting System
-   - automatic report generation
-   - deterministic JSON persistence
-   - latest report loading
-   - CLI report rendering
-- Typed dataclass-based pipeline contracts
-- Discovery/execution layered architecture
-- Coordinator-based discovery pipeline
-- Contract-first architecture
-- Centralized configuration authority
+- Command-line interface with dedicated commands
+   - move
+   - report
+
+- Config-driven behavior
+   - YAML-based configuration
+   - configurable classification rules
+   - configurable folder naming
+
+- File organization
+   - deterministic execution planning
+   - structured file classification
+   - automatic folder organization
+
+- Safe execution
+   - dry-run simulation
+   - per-file failure isolation
+   - planning/execution separation
+
+- Reporting
+   - automatic execution reports
+   - JSON report persistence
+   - latest report inspection via CLI
+
+- Observability
+   - structured logging
+   - centralized event taxonomy
+   - execution summaries
+   - end-to-end pipeline traceability
 
 ---
 
@@ -202,6 +185,8 @@ smart-file-organizer/
 ├── reports/
 │   └── executions/
 │
+├── cli/
+│   └── parser.py
 │
 ├── tasks/
 │   ├── discovery/
@@ -240,6 +225,8 @@ smart-file-organizer/
 ```md
 CLI Input
    ↓
+parser.py
+   ↓
 main.py
    ↓
 discovery/coordinator.py
@@ -265,6 +252,8 @@ ExecutionReport (.json)
 
 ```md
 CLI Input
+   ↓
+parser.py
    ↓
 main.py
    ↓
@@ -460,8 +449,8 @@ v0.4.0 and v0.5.0 were internal iterations merged into adjacent releases for ver
 * [x] Reporting architecture
 * [x] Configuration-driven report persistence
 * [x] Observability improvements
+* [x] CLI & developer experience
 * [ ] Performance optimization
-* [ ] CLI & developer experience
 * [ ] Testing and stabilization
 * [ ] Documentation refinement
 
@@ -498,6 +487,10 @@ v0.4.0 and v0.5.0 were internal iterations merged into adjacent releases for ver
 - Centralized event taxonomy
 - Improved observability consistency
 - Composition-root dependency injection
+- Dedicated CLI parser module
+- Argparse subcommands
+- Command-specific help output
+- Move/report command separation
 
 ### v0.8.0
 

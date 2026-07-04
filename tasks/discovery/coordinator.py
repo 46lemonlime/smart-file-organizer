@@ -1,3 +1,6 @@
+# -------------------------------------------------
+# DISCOVERY COORDINATOR
+# -------------------------------------------------
 """
 Smart File Organizer - Discovery Coordinator
 

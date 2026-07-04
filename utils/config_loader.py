@@ -112,6 +112,8 @@ def _build_default_config() -> AppConfig:
         dry_run=False,
         ignore_hidden_files=True,
         ignore_symlinks=True,
+        reports_directory="reports",
+        execution_reports_directory="executions",
         categories={}
     )
 
@@ -141,6 +143,11 @@ def _validate_config(config: dict) -> AppConfig:
     dry_run = config.get("dry_run", False)
     ignore_hidden_files = config.get("ignore_hidden_files", True)
     ignore_symlinks = config.get("ignore_symlinks", True)
+    reports_directory = config.get("reports_directory", "reports")
+    execution_reports_directory = config.get(
+        "execution_reports_directory",
+        "executions"
+    )
 
     # type safety (IMPORTANT)
     if not isinstance(folder_prefix, str):
@@ -158,6 +165,14 @@ def _validate_config(config: dict) -> AppConfig:
     if not isinstance(ignore_symlinks, bool):
         log_error(f"{CONFIG_INVALID} | key=ignore_symlinks")
         ignore_symlinks = True
+
+    if not isinstance(reports_directory, str):
+        log_error(f"{CONFIG_INVALID} | key=reports_directory")
+        reports_directory = "reports"
+
+    if not isinstance(execution_reports_directory, str):
+        log_error(f"{CONFIG_INVALID} | key=execution_reports_directory")
+        execution_reports_directory = "executions"
 
     # -----------------------------
     # CATEGORIES
@@ -216,6 +231,8 @@ def _validate_config(config: dict) -> AppConfig:
             dry_run=dry_run,
             ignore_hidden_files=ignore_hidden_files,
             ignore_symlinks=ignore_symlinks,
+            reports_directory=reports_directory,
+            execution_reports_directory=execution_reports_directory,
             categories=categories
         )
 

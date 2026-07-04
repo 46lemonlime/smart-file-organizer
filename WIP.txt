@@ -4,22 +4,45 @@
 
 Implemented (FINAL COMMIT SUMMARY):
 
+[x] Reporting Subsystem (First Implementation)
+    - introduced reporting contracts
+    - implemented report generation pipeline
+    - implemented report persistence layer
+    - implemented report loading layer
+    - implemented CLI report presentation
+    - automatic report generation after every execution
+    - deterministic JSON report persistence
+    - report rendering separated from report generation
+    - composition-root integration
 
+[x] Reporting Architecture
+    - generator.py builds report contracts
+    - reporter.py presents reports
+    - saver.py persists reports
+    - loader.py reconstructs persisted reports
+    - reporting responsibilities fully separated
+
+[x] Configuration Improvements
+    - report persistence directories moved into AppConfig
+    - removed hardcoded reporting paths
+    - reporting persistence is now configuration-driven
 
 
 
 Planned to be implemented:
 
-[ ] Reporting Subsystem
-    - implement reporter module
-    - generate deterministic execution reports
-    - support dry-run reporting
-    - define reporting contracts
-    - prepare extensible output formats
+[ ] Reporting Improvements
+    - support multiple report renderers
+        - CLI
+        - JSON
+        - Markdown
+        - HTML
+        - GUI
+    - report history browsing
+    - report filtering
+    - report export pipeline
 
 [ ] Contract System Expansion
-    - introduce reporting contracts
-    - define reporting data structures
     - introduce plugin contracts
     - prepare AI classification contracts
     - expand typed contract coverage

@@ -17,12 +17,14 @@ This module acts as the canonical source of truth for:
 - discovery entities
 - execution operations
 - execution planning structures
+- runtime configuration
+- reporting structures
 
 IMPORTANT:
 These contracts are shared across multiple subsystems:
 - discovery
 - execution
-- reporting (future)
+- reporting
 
 DESIGN PRINCIPLES:
 - deterministic structures
@@ -134,8 +136,28 @@ def _validate_bool_type(
         )
 
 
+def _validate_non_negative_int(
+    value,
+    field_name: str
+):
+    """
+    Validates that a contract field contains a non-negative integer.
+    """
+
+    if not isinstance(value, int):
+        raise TypeError(
+            f"{field_name} must be int "
+            f"(received {type(value).__name__})"
+        )
+
+    if value < 0:
+        raise ValueError(
+            f"{field_name} cannot be negative"
+        )
+    
+
 # -------------------------------------------------
-# CONFIGURATION CONTRACTS
+# CATEGORY CONFIG CONTRACT
 # -------------------------------------------------
 @dataclass
 class CategoryConfig:
@@ -169,7 +191,9 @@ class CategoryConfig:
                 "extensions item"
             )
 
-
+# -------------------------------------------------
+# APPLICATION CONFIG CONTRACT
+# -------------------------------------------------
 @dataclass
 class AppConfig:
     """
@@ -185,6 +209,8 @@ class AppConfig:
     dry_run: bool
     ignore_hidden_files: bool
     ignore_symlinks: bool
+    reports_directory: str
+    execution_reports_directory: str
     # Dynamic config-driven categories.
     # Keys are category names defined in config.yaml.
     categories: dict[str, CategoryConfig]
@@ -216,6 +242,16 @@ class AppConfig:
             "categories"
         )
 
+        _validate_non_empty_string(
+            self.reports_directory,
+            "reports_directory"
+        )
+
+        _validate_non_empty_string(
+            self.execution_reports_directory,
+            "execution_reports_directory"
+        )
+
         for category_name, category_config in self.categories.items():
 
             _validate_non_empty_string(
@@ -234,7 +270,7 @@ class AppConfig:
             
             
 # -------------------------------------------------
-# DISCOVERY ENTITY CONTRACTS
+# DISCOVERY ENTITY CONTRACT
 # -------------------------------------------------
 @dataclass
 class DiscoveredItem:
@@ -323,7 +359,7 @@ ClassifiedDiscovery: TypeAlias = dict[str, list[str]]
 
 
 # -------------------------------------------------
-# EXECUTION ENTITY CONTRACTS
+# EXECUTION ENTITY CONTRACT
 # -------------------------------------------------
 @dataclass
 class ExecutionOperation:
@@ -535,3 +571,266 @@ class ExecutionPlan:
                     "skipped must contain "
                     "SkippedOperation objects"
                 )
+            
+# -------------------------------------------------
+# REPORT CATEGORY CONTRACT
+# -------------------------------------------------
+@dataclass
+class CategoryReport:
+    """
+    Represents aggregated report data for a single category.
+
+    CONTRACT GUARANTEES:
+    - category is a non-empty string
+    - files is a non-negative integer
+
+    IMPORTANT:
+    This contract contains reporting data only.
+    It contains NO classification logic.
+    """
+
+    category: str
+    files: int
+
+    def __post_init__(self):
+
+        # -------------------------------------------------
+        # REQUIRED FIELD VALIDATION
+        # -------------------------------------------------
+        _validate_non_empty_string(
+            self.category,
+            "category"
+        )
+
+        _validate_non_negative_int(
+            self.files,
+            "files"
+        )
+        
+
+# -------------------------------------------------
+# DISCOVERY REPORT CONTRACT
+# -------------------------------------------------
+@dataclass
+class DiscoveryReport:
+    """
+    Represents the discovery stage summary.
+
+    CONTRACT GUARANTEES:
+    - path is a non-empty string
+    - totals are non-negative integers
+    - categories is list[CategoryReport]
+
+    IMPORTANT:
+    This contract contains structured reporting data only.
+    It contains NO presentation logic.
+    """
+    path: str
+    total_discovered: int
+    total_skipped: int
+    categories: list[CategoryReport]
+
+    def __post_init__(self):
+
+        # -------------------------------------------------
+        # REQUIRED FIELD VALIDATION
+        # -------------------------------------------------
+        _validate_non_empty_string(
+            self.path,
+            "path"
+        )
+
+        _validate_non_negative_int(
+            self.total_discovered,
+            "total_discovered"
+        )
+
+        _validate_non_negative_int(
+            self.total_skipped,
+            "total_skipped"
+        )
+
+        _validate_list_type(
+            self.categories,
+            "categories"
+        )
+
+        # -------------------------------------------------
+        # CATEGORY REPORT VALIDATION
+        # -------------------------------------------------
+        for category_report in self.categories:
+
+            if not isinstance(
+                category_report,
+                CategoryReport
+            ):
+                raise TypeError(
+                    "categories must contain "
+                    "CategoryReport objects"
+                )
+
+
+# -------------------------------------------------
+# PLANNING REPORT CONTRACT
+# -------------------------------------------------
+@dataclass
+class PlanningReport:
+    """
+    Represents the execution planning summary.
+
+    CONTRACT GUARANTEES:
+    - total_operations is a non-negative integer
+    - total_folders is a non-negative integer
+    - total_skipped is a non-negative integer
+
+    IMPORTANT:
+    This contract describes the generated execution plan.
+    It does NOT indicate execution success.
+    """
+    total_operations: int
+    total_folders: int
+    total_skipped: int
+
+    def __post_init__(self):
+
+        # -------------------------------------------------
+        # REQUIRED FIELD VALIDATION
+        # -------------------------------------------------
+        _validate_non_negative_int(
+            self.total_operations,
+            "total_operations"
+        )
+
+        _validate_non_negative_int(
+            self.total_folders,
+            "total_folders"
+        )
+
+        _validate_non_negative_int(
+            self.total_skipped,
+            "total_skipped"
+        )
+
+
+# -------------------------------------------------
+# EXECUTION SUMMARY CONTRACT
+# -------------------------------------------------
+@dataclass
+class ExecutionSummaryReport:
+    """
+    Represents the final execution outcome.
+
+    CONTRACT GUARANTEES:
+    - dry_run is boolean
+    - total_processed is a non-negative integer
+    - total_failed is a non-negative integer
+    - categories is list[CategoryReport]
+
+    IMPORTANT:
+    Dry-run and real execution share the same report structure.
+    This keeps reporting output deterministic across modes.
+    """
+    dry_run: bool
+    total_processed: int
+    total_failed: int
+    categories: list[CategoryReport]
+
+    def __post_init__(self):
+
+        # -------------------------------------------------
+        # REQUIRED FIELD VALIDATION
+        # -------------------------------------------------
+        _validate_bool_type(
+            self.dry_run,
+            "dry_run"
+        )
+
+        _validate_non_negative_int(
+            self.total_processed,
+            "total_processed"
+        )
+
+        _validate_non_negative_int(
+            self.total_failed,
+            "total_failed"
+        )
+
+        _validate_list_type(
+            self.categories,
+            "categories"
+        )
+
+        # -------------------------------------------------
+        # CATEGORY REPORT VALIDATION
+        # -------------------------------------------------
+        for category_report in self.categories:
+
+            if not isinstance(
+                category_report,
+                CategoryReport
+            ):
+                raise TypeError(
+                    "categories must contain "
+                    "CategoryReport objects"
+                )
+
+
+# -------------------------------------------------
+# EXECUTION REPORT CONTRACT
+# -------------------------------------------------
+@dataclass
+class ExecutionReport:
+    """
+    Represents the complete structured report for one execution.
+
+    CONTRACT GUARANTEES:
+    - path is a non-empty string
+    - discovery is DiscoveryReport
+    - planning is PlanningReport
+    - execution is ExecutionSummaryReport
+
+    IMPORTANT:
+    This contract aggregates pipeline-stage reports.
+    It contains NO rendering logic.
+    """
+    path: str
+    discovery: DiscoveryReport
+    planning: PlanningReport
+    execution: ExecutionSummaryReport
+
+    def __post_init__(self):
+
+        # -------------------------------------------------
+        # REQUIRED FIELD VALIDATION
+        # -------------------------------------------------
+        _validate_non_empty_string(
+            self.path,
+            "path"
+        )
+
+        # -------------------------------------------------
+        # REPORT CONTRACT VALIDATION
+        # -------------------------------------------------
+        if not isinstance(
+            self.discovery,
+            DiscoveryReport
+        ):
+            raise TypeError(
+                "discovery must be DiscoveryReport"
+            )
+
+        if not isinstance(
+            self.planning,
+            PlanningReport
+        ):
+            raise TypeError(
+                "planning must be PlanningReport"
+            )
+
+        if not isinstance(
+            self.execution,
+            ExecutionSummaryReport
+        ):
+            raise TypeError(
+                "execution must be ExecutionSummaryReport"
+            )

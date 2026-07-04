@@ -88,6 +88,21 @@ MOVE_FAILED = "move_failed"
 MOVE_SKIP = "move_skip"
 
 # -------------------------------------------------
+# REPORTING EVENTS
+# -------------------------------------------------
+REPORT_RENDER_START = "report_render_start"
+REPORT_RENDER_COMPLETE = "report_render_complete"
+REPORT_RENDER_FAILED = "report_render_failed"
+REPORT_SUMMARY = "report_summary"
+REPORT_CATEGORY = "report_category"
+REPORT_SAVED = "report_saved"
+REPORT_SAVE_FAILED = "report_save_failed"
+REPORT_LOAD_START = "report_load_start"
+REPORT_LOAD_COMPLETE = "report_load_complete"
+REPORT_LOAD_FAILED = "report_load_failed"
+REPORT_NOT_FOUND = "report_not_found"
+
+# -------------------------------------------------
 # FILE EVENTS
 # -------------------------------------------------
 FILE_MOVED = "file_moved"

@@ -217,5 +217,11 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
+#-------------------------------
+# Smart File Organizer Ignores
+#-------------------------------
+#runtime artifacts
+logs/
+reports/executions/*.json
 # AI Analysis - used for proyect development
 ai_analysis

@@ -13,9 +13,9 @@ python3 main.py move ~/Downloads
 ```bash
 python3 main.py move ~/Downloads --dry-run
 ```
-**Generate report (future)**
+**View latest execution report**
 ```bash
-python3 main.py report ~/Downloads
+python3 main.py report
 ```
 ---
 
@@ -31,6 +31,7 @@ It follows a config-driven and deterministic execution design:
 4. Builds a deterministic execution plan
 5. Executes or simulates file system operations
 6. Logs structured execution traces for observability and debugging
+7. Generates a structured execution report for later inspection
 
 The system prioritizes transparency, control, and reproducibility over raw automation speed.
 ```
@@ -69,8 +70,11 @@ Executor
    - discovery/coordinator.py → discovery pipeline orchestration
    - execution/planner.py → deterministic execution planning
    - execution/executor.py → filesystem execution layer
-   - reporting/reporter.py → reporting subsystem (foundation)
    - core/contracts.py → shared typed pipeline contracts
+   - reporting/generator.py → execution report generation
+   - reporting/saver.py → report persistence
+   - reporting/loader.py → persisted report loading
+   - reporting/reporter.py → CLI report presentation
 - Configuration System
    - folder prefix control
    - hidden file handling
@@ -87,6 +91,11 @@ Executor
    - Optional execution tracing enhancements:
       - op_id tracking
       - total_failed tracking
+- Reporting System
+   - automatic report generation
+   - deterministic JSON persistence
+   - latest report loading
+   - CLI report rendering
 - Typed dataclass-based pipeline contracts
 - Discovery/execution layered architecture
 - Coordinator-based discovery pipeline
@@ -181,6 +190,10 @@ smart-file-organizer/
 ├── logs/
 │   └── smartorg.log
 │
+├── reports/
+│   └── executions/
+│
+│
 ├── tasks/
 │   ├── discovery/
 │   │   ├── scanner.py
@@ -193,6 +206,9 @@ smart-file-organizer/
 │   │   └── executor.py
 │   │
 │   └── reporting/
+│       ├── generator.py
+│       ├── saver.py
+│       ├── loader.py
 │       └── reporter.py
 │
 ├── core/
@@ -227,6 +243,12 @@ execution/planner.py
    ↓
 execution/executor.py
    ↓
+reporting/generator.py
+   ↓
+reporting/saver.py
+   ↓
+ExecutionReport (.json)
+   ↓
 Filesystem execution / Dry-run simulation
 ```
 
@@ -237,9 +259,11 @@ CLI Input
    ↓
 main.py
    ↓
-generate_report()
+loader.py
    ↓
-Report output generated (future expansion area)
+reporter.py
+   ↓
+CLI Output
 ```
 
 ---
@@ -266,15 +290,15 @@ python3 main.py move /path/to/directory
 python3 main.py move /Users/yourname/Downloads
 ```
 
-#### 📊 Generate report (not implemented yet)
+#### 📊 View latest execution report
 ```bash
-python3 main.py report /path/to/directory
+python3 main.py report
 ```
 
 #### Example:
 
 ```bash
-python3 main.py report /Users/yourname/Downloads
+python3 main.py report
 ```
 
 
@@ -423,7 +447,7 @@ v0.4.0 and v0.5.0 were internal iterations merged into adjacent releases for ver
 * [x] Improved subsystem cohesion
 
 #### Phase 9 - v0.9.0 Product Maturity & Stabilization
-* [ ] Reporting subsystem
+* [x] Reporting subsystem
 * [ ] Observability improvements
 * [ ] Performance optimization
 * [ ] CLI & developer experience
@@ -440,7 +464,7 @@ v0.4.0 and v0.5.0 were internal iterations merged into adjacent releases for ver
 
 ### 🚧 Current Limitations
 
-- Reporting subsystem not yet implemented
+- Reporting subsystem suporting more renderers.
 - No undo / rollback mechanism
 - No operation history tracking
 - No plugin-based classification system
@@ -449,6 +473,16 @@ v0.4.0 and v0.5.0 were internal iterations merged into adjacent releases for ver
 ---
 
 ## 7. 📜 Version History
+
+### v0.9.0 (in progress)
+
+- Complete reporting subsystem
+- Report generator
+- Report persistence
+- Report loader
+- CLI report renderer
+- Configuration-driven report storage
+- ExecutionReport pipeline
 
 ### v0.8.0
 

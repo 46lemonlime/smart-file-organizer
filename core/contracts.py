@@ -15,8 +15,10 @@ PURPOSE:
 ARCHITECTURE ROLE:
 This module acts as the canonical source of truth for:
 - discovery entities
+- discovery results
 - execution operations
 - execution planning structures
+- execution results
 - runtime configuration
 - reporting structures
 
@@ -49,7 +51,7 @@ from typing import Optional, TypeAlias
 
 
 # -------------------------------------------------
-# VALIDATION HELPERS
+# 1. VALIDATION HELPERS
 # -------------------------------------------------
 def _validate_non_empty_string(
     value,
@@ -58,11 +60,6 @@ def _validate_non_empty_string(
     """
     Validates that a contract field contains
     a non-empty string value.
-
-    PURPOSE:
-    - centralize string validation
-    - enforce deterministic contract guarantees
-    - reduce duplicated validation logic
     """
 
     if not isinstance(value, str):
@@ -85,11 +82,6 @@ def _validate_list_type(
 ):
     """
     Validates that a contract field contains a list.
-
-    PURPOSE:
-    - centralize list validation
-    - enforce stable contract structures
-    - reduce duplicated validation logic
     """
 
     if not isinstance(value, list):
@@ -106,11 +98,6 @@ def _validate_dict_type(
 ):
     """
     Validates that a contract field contains a dictionary.
-
-    PURPOSE:
-    - centralize dictionary validation
-    - enforce stable contract structures
-    - reduce duplicated validation logic
     """
 
     if not isinstance(value, dict):
@@ -130,6 +117,7 @@ def _validate_bool_type(
     """
 
     if not isinstance(value, bool):
+
         raise TypeError(
             f"{field_name} must be bool "
             f"(received {type(value).__name__})"
@@ -145,20 +133,23 @@ def _validate_non_negative_int(
     """
 
     if not isinstance(value, int):
+
         raise TypeError(
             f"{field_name} must be int "
             f"(received {type(value).__name__})"
         )
 
     if value < 0:
+
         raise ValueError(
             f"{field_name} cannot be negative"
         )
-    
+
 
 # -------------------------------------------------
-# CATEGORY CONFIG CONTRACT
+# 2. CONFIGURATION CONTRACTS
 # -------------------------------------------------
+# CATEGORY CONFIG CONTRACT
 @dataclass
 class CategoryConfig:
     """
@@ -191,9 +182,8 @@ class CategoryConfig:
                 "extensions item"
             )
 
-# -------------------------------------------------
+
 # APPLICATION CONFIG CONTRACT
-# -------------------------------------------------
 @dataclass
 class AppConfig:
     """
@@ -211,8 +201,6 @@ class AppConfig:
     ignore_symlinks: bool
     reports_directory: str
     execution_reports_directory: str
-    # Dynamic config-driven categories.
-    # Keys are category names defined in config.yaml.
     categories: dict[str, CategoryConfig]
 
     def __post_init__(self):
@@ -263,15 +251,17 @@ class AppConfig:
                 category_config,
                 CategoryConfig
             ):
+
                 raise TypeError(
                     "categories must contain "
                     "CategoryConfig objects"
                 )
-            
-            
+
+
 # -------------------------------------------------
-# DISCOVERY ENTITY CONTRACT
+# 3. DISCOVERY CONTRACTS
 # -------------------------------------------------
+# DISCOVERED ITEM CONTRACT
 @dataclass
 class DiscoveredItem:
     """
@@ -294,18 +284,7 @@ class DiscoveredItem:
     is_directory: bool
 
     def __post_init__(self):
-        """
-        Enforces deterministic discovery contract validity.
 
-        PURPOSE:
-        - prevent malformed discovery entities
-        - centralize structural validation
-        - strengthen pipeline guarantees
-        """
-
-        # -------------------------------------------------
-        # STRING VALIDATION
-        # -------------------------------------------------
         _validate_non_empty_string(
             self.name,
             "name"
@@ -316,9 +295,6 @@ class DiscoveredItem:
             "full_path"
         )
 
-        # -------------------------------------------------
-        # BOOLEAN VALIDATION
-        # -------------------------------------------------
         _validate_bool_type(
             self.is_file,
             "is_file"
@@ -330,37 +306,118 @@ class DiscoveredItem:
         )
 
 
-# -------------------------------------------------
-# DISCOVERY DATASET CONTRACTS
-# -------------------------------------------------
-# Raw scanner output contract.
-#
-# IMPORTANT:
-# This structure represents the normalized dataset
-# returned by scanner.py after filesystem discovery.
+# RAW DISCOVERY DATASET CONTRACT
 RawDiscoveryDataset: TypeAlias = list[DiscoveredItem]
 
 
-# Classified discovery output contract.
-#
-# IMPORTANT:
-# Categories are intentionally NOT hardcoded here.
-#
-# The classification system is fully config-driven and
-# categories are defined dynamically via config.yaml.
-#
-# Example:
-# {
-#     "images": ["photo.jpg"],
-#     "documents": ["notes.pdf"],
-#     "music": ["song.mp3"]
-# }
+# CLASSIFIED DISCOVERY DATASET CONTRACT
 ClassifiedDiscovery: TypeAlias = dict[str, list[str]]
 
 
+# DISCOVERY SKIPPED ITEM CONTRACT
+@dataclass
+class DiscoverySkippedItem:
+    """
+    Represents an item skipped during the discovery stage.
+
+    CONTRACT GUARANTEES:
+    - name is a non-empty string
+    - source_path is a non-empty string
+    - reason is a non-empty string
+
+    IMPORTANT:
+    This contract preserves item-level discovery skip
+    traceability for reporting and future audit workflows.
+    """
+
+    name: str
+    source_path: str
+    reason: str
+
+    def __post_init__(self):
+
+        _validate_non_empty_string(
+            self.name,
+            "name"
+        )
+
+        _validate_non_empty_string(
+            self.source_path,
+            "source_path"
+        )
+
+        _validate_non_empty_string(
+            self.reason,
+            "reason"
+        )
+
+
+# DISCOVERY RESULT CONTRACT
+@dataclass
+class DiscoveryResult:
+    """
+    Represents the complete discovery-stage result.
+
+    CONTRACT GUARANTEES:
+    - classified_data is ClassifiedDiscovery
+    - skipped_items is list[DiscoverySkippedItem]
+
+    IMPORTANT:
+    This contract preserves discovery metadata that does not
+    belong inside ClassifiedDiscovery itself.
+    """
+
+    classified_data: ClassifiedDiscovery
+    skipped_items: list[DiscoverySkippedItem]
+
+    def __post_init__(self):
+
+        _validate_dict_type(
+            self.classified_data,
+            "classified_data"
+        )
+
+        for category, files in self.classified_data.items():
+
+            _validate_non_empty_string(
+                category,
+                "classified_data category"
+            )
+
+            _validate_list_type(
+                files,
+                "classified_data files"
+            )
+
+            for file in files:
+
+                _validate_non_empty_string(
+                    file,
+                    "classified_data file"
+                )
+
+        _validate_list_type(
+            self.skipped_items,
+            "skipped_items"
+        )
+
+        for skipped_item in self.skipped_items:
+
+            if not isinstance(
+                skipped_item,
+                DiscoverySkippedItem
+            ):
+
+                raise TypeError(
+                    "skipped_items must contain "
+                    "DiscoverySkippedItem objects"
+                )
+
+
 # -------------------------------------------------
-# EXECUTION ENTITY CONTRACT
+# 4. EXECUTION PLANNING CONTRACTS
 # -------------------------------------------------
+# EXECUTION OPERATION CONTRACT
 @dataclass
 class ExecutionOperation:
     """
@@ -369,7 +426,7 @@ class ExecutionOperation:
     CONTRACT GUARANTEES:
     - all required fields are non-empty strings
     - operation structure is deterministic
-    - executor-safe structure is enforced
+    - mover-safe structure is enforced
 
     IMPORTANT:
     This contract intentionally contains NO filesystem logic.
@@ -383,18 +440,7 @@ class ExecutionOperation:
     folder_name: str
 
     def __post_init__(self):
-        """
-        Enforces deterministic execution operation validity.
 
-        PURPOSE:
-        - prevent malformed execution operations
-        - centralize structural validation
-        - strengthen execution guarantees
-        """
-
-        # -------------------------------------------------
-        # REQUIRED STRING VALIDATION
-        # -------------------------------------------------
         _validate_non_empty_string(
             self.category,
             "category"
@@ -421,9 +467,7 @@ class ExecutionOperation:
         )
 
 
-# -------------------------------------------------
-# EXECUTION SKIP CONTRACT
-# -------------------------------------------------
+# SKIPPED OPERATION CONTRACT
 @dataclass
 class SkippedOperation:
     """
@@ -445,26 +489,12 @@ class SkippedOperation:
     source_path: Optional[str] = None
 
     def __post_init__(self):
-        """
-        Enforces deterministic skipped operation validity.
 
-        PURPOSE:
-        - prevent malformed skip diagnostics
-        - centralize structural validation
-        - strengthen planner observability guarantees
-        """
-
-        # -------------------------------------------------
-        # REQUIRED FIELD VALIDATION
-        # -------------------------------------------------
         _validate_non_empty_string(
             self.reason,
             "reason"
         )
 
-        # -------------------------------------------------
-        # OPTIONAL FIELD VALIDATION
-        # -------------------------------------------------
         optional_fields = {
             "file": self.file,
             "category": self.category,
@@ -481,9 +511,7 @@ class SkippedOperation:
                 )
 
 
-# -------------------------------------------------
-# EXECUTION AGGREGATE CONTRACTS
-# -------------------------------------------------
+# EXECUTION AGGREGATED PLAN CONTRACT
 @dataclass
 class ExecutionPlan:
     """
@@ -505,18 +533,7 @@ class ExecutionPlan:
     skipped: list[SkippedOperation]
 
     def __post_init__(self):
-        """
-        Enforces deterministic execution plan validity.
 
-        PURPOSE:
-        - centralize execution plan validation
-        - prevent malformed execution structures
-        - strengthen planner → executor guarantees
-        """
-
-        # -------------------------------------------------
-        # LIST STRUCTURE VALIDATION
-        # -------------------------------------------------
         _validate_list_type(
             self.folders_to_create,
             "folders_to_create"
@@ -532,9 +549,6 @@ class ExecutionPlan:
             "skipped"
         )
 
-        # -------------------------------------------------
-        # FOLDER VALIDATION
-        # -------------------------------------------------
         for folder in self.folders_to_create:
 
             _validate_non_empty_string(
@@ -542,9 +556,6 @@ class ExecutionPlan:
                 "folders_to_create item"
             )
 
-        # -------------------------------------------------
-        # OPERATION CONTRACT VALIDATION
-        # -------------------------------------------------
         for operation in self.operations:
 
             if not isinstance(
@@ -557,9 +568,6 @@ class ExecutionPlan:
                     "ExecutionOperation objects"
                 )
 
-        # -------------------------------------------------
-        # SKIPPED CONTRACT VALIDATION
-        # -------------------------------------------------
         for skipped_operation in self.skipped:
 
             if not isinstance(
@@ -571,10 +579,77 @@ class ExecutionPlan:
                     "skipped must contain "
                     "SkippedOperation objects"
                 )
-            
+
+
 # -------------------------------------------------
-# REPORT CATEGORY CONTRACT
+# 5. EXECUTION RESULT CONTRACTS
 # -------------------------------------------------
+# EXECUTION RESULT CONTRACT
+@dataclass
+class ExecutionResult:
+    """
+    Represents the result of a filesystem execution operation.
+
+    CONTRACT GUARANTEES:
+    - category is a non-empty string
+    - file is a non-empty string
+    - source_path is a non-empty string
+    - destination_path is a non-empty string
+    - status is a non-empty string
+    - reason is optional but must be valid if provided
+
+    IMPORTANT:
+    This contract describes what actually happened during
+    the mover stage. It is designed for detailed reporting,
+    auditability, and future rollback preparation.
+    """
+
+    category: str
+    file: str
+    source_path: str
+    destination_path: str
+    status: str
+    reason: Optional[str] = None
+
+    def __post_init__(self):
+
+        _validate_non_empty_string(
+            self.category,
+            "category"
+        )
+
+        _validate_non_empty_string(
+            self.file,
+            "file"
+        )
+
+        _validate_non_empty_string(
+            self.source_path,
+            "source_path"
+        )
+
+        _validate_non_empty_string(
+            self.destination_path,
+            "destination_path"
+        )
+
+        _validate_non_empty_string(
+            self.status,
+            "status"
+        )
+
+        if self.reason is not None:
+
+            _validate_non_empty_string(
+                self.reason,
+                "reason"
+            )
+
+
+# -------------------------------------------------
+# 6. REPORTING CONTRACTS
+# -------------------------------------------------
+# CATEGORY REPORT CONTRACT
 @dataclass
 class CategoryReport:
     """
@@ -594,9 +669,6 @@ class CategoryReport:
 
     def __post_init__(self):
 
-        # -------------------------------------------------
-        # REQUIRED FIELD VALIDATION
-        # -------------------------------------------------
         _validate_non_empty_string(
             self.category,
             "category"
@@ -606,35 +678,33 @@ class CategoryReport:
             self.files,
             "files"
         )
-        
 
-# -------------------------------------------------
+
 # DISCOVERY REPORT CONTRACT
-# -------------------------------------------------
 @dataclass
 class DiscoveryReport:
     """
-    Represents the discovery stage summary.
+    Represents the discovery stage report.
 
     CONTRACT GUARANTEES:
     - path is a non-empty string
     - totals are non-negative integers
     - categories is list[CategoryReport]
+    - skipped_items is list[DiscoverySkippedItem]
 
     IMPORTANT:
     This contract contains structured reporting data only.
     It contains NO presentation logic.
     """
+
     path: str
     total_discovered: int
     total_skipped: int
     categories: list[CategoryReport]
+    skipped_items: list[DiscoverySkippedItem]
 
     def __post_init__(self):
 
-        # -------------------------------------------------
-        # REQUIRED FIELD VALIDATION
-        # -------------------------------------------------
         _validate_non_empty_string(
             self.path,
             "path"
@@ -655,47 +725,60 @@ class DiscoveryReport:
             "categories"
         )
 
-        # -------------------------------------------------
-        # CATEGORY REPORT VALIDATION
-        # -------------------------------------------------
+        _validate_list_type(
+            self.skipped_items,
+            "skipped_items"
+        )
+
         for category_report in self.categories:
 
             if not isinstance(
                 category_report,
                 CategoryReport
             ):
+
                 raise TypeError(
                     "categories must contain "
                     "CategoryReport objects"
                 )
 
+        for skipped_item in self.skipped_items:
 
-# -------------------------------------------------
+            if not isinstance(
+                skipped_item,
+                DiscoverySkippedItem
+            ):
+
+                raise TypeError(
+                    "skipped_items must contain "
+                    "DiscoverySkippedItem objects"
+                )
+
+
 # PLANNING REPORT CONTRACT
-# -------------------------------------------------
 @dataclass
 class PlanningReport:
     """
-    Represents the execution planning summary.
+    Represents the execution planning report.
 
     CONTRACT GUARANTEES:
     - total_operations is a non-negative integer
     - total_folders is a non-negative integer
     - total_skipped is a non-negative integer
+    - skipped_operations is list[SkippedOperation]
 
     IMPORTANT:
     This contract describes the generated execution plan.
     It does NOT indicate execution success.
     """
+
     total_operations: int
     total_folders: int
     total_skipped: int
+    skipped_operations: list[SkippedOperation]
 
     def __post_init__(self):
 
-        # -------------------------------------------------
-        # REQUIRED FIELD VALIDATION
-        # -------------------------------------------------
         _validate_non_negative_int(
             self.total_operations,
             "total_operations"
@@ -711,35 +794,51 @@ class PlanningReport:
             "total_skipped"
         )
 
+        _validate_list_type(
+            self.skipped_operations,
+            "skipped_operations"
+        )
 
-# -------------------------------------------------
-# EXECUTION SUMMARY CONTRACT
-# -------------------------------------------------
+        for skipped_operation in self.skipped_operations:
+
+            if not isinstance(
+                skipped_operation,
+                SkippedOperation
+            ):
+
+                raise TypeError(
+                    "skipped_operations must contain "
+                    "SkippedOperation objects"
+                )
+
+
+# MOVER REPORT CONTRACT
 @dataclass
-class ExecutionSummaryReport:
+class MoverReport:
     """
-    Represents the final execution outcome.
+    Represents the mover stage report.
 
     CONTRACT GUARANTEES:
     - dry_run is boolean
     - total_processed is a non-negative integer
     - total_failed is a non-negative integer
     - categories is list[CategoryReport]
+    - results is list[ExecutionResult]
 
     IMPORTANT:
     Dry-run and real execution share the same report structure.
-    This keeps reporting output deterministic across modes.
+    This contract describes the mover stage outcome only.
+    It does NOT aggregate the full execution pipeline.
     """
+
     dry_run: bool
     total_processed: int
     total_failed: int
     categories: list[CategoryReport]
+    results: list[ExecutionResult]
 
     def __post_init__(self):
 
-        # -------------------------------------------------
-        # REQUIRED FIELD VALIDATION
-        # -------------------------------------------------
         _validate_bool_type(
             self.dry_run,
             "dry_run"
@@ -760,24 +859,37 @@ class ExecutionSummaryReport:
             "categories"
         )
 
-        # -------------------------------------------------
-        # CATEGORY REPORT VALIDATION
-        # -------------------------------------------------
+        _validate_list_type(
+            self.results,
+            "results"
+        )
+
         for category_report in self.categories:
 
             if not isinstance(
                 category_report,
                 CategoryReport
             ):
+
                 raise TypeError(
                     "categories must contain "
                     "CategoryReport objects"
                 )
 
+        for execution_result in self.results:
 
-# -------------------------------------------------
+            if not isinstance(
+                execution_result,
+                ExecutionResult
+            ):
+
+                raise TypeError(
+                    "results must contain "
+                    "ExecutionResult objects"
+                )
+
+
 # EXECUTION REPORT CONTRACT
-# -------------------------------------------------
 @dataclass
 class ExecutionReport:
     """
@@ -787,34 +899,30 @@ class ExecutionReport:
     - path is a non-empty string
     - discovery is DiscoveryReport
     - planning is PlanningReport
-    - execution is ExecutionSummaryReport
+    - mover is MoverReport
 
     IMPORTANT:
     This contract aggregates pipeline-stage reports.
     It contains NO rendering logic.
     """
+
     path: str
     discovery: DiscoveryReport
     planning: PlanningReport
-    execution: ExecutionSummaryReport
+    mover: MoverReport
 
     def __post_init__(self):
 
-        # -------------------------------------------------
-        # REQUIRED FIELD VALIDATION
-        # -------------------------------------------------
         _validate_non_empty_string(
             self.path,
             "path"
         )
 
-        # -------------------------------------------------
-        # REPORT CONTRACT VALIDATION
-        # -------------------------------------------------
         if not isinstance(
             self.discovery,
             DiscoveryReport
         ):
+
             raise TypeError(
                 "discovery must be DiscoveryReport"
             )
@@ -823,14 +931,16 @@ class ExecutionReport:
             self.planning,
             PlanningReport
         ):
+
             raise TypeError(
                 "planning must be PlanningReport"
             )
 
         if not isinstance(
-            self.execution,
-            ExecutionSummaryReport
+            self.mover,
+            MoverReport
         ):
+
             raise TypeError(
-                "execution must be ExecutionSummaryReport"
+                "mover must be MoverReport"
             )

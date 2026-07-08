@@ -10,6 +10,9 @@ Responsibilities:
 - Render execution reports for CLI output
 - Present report summaries
 - Present category-level report details
+- Present skipped discovery items
+- Present skipped planning operations
+- Present operation-level execution results
 - Keep report presentation separate from persistence
 
 Architecture Role:
@@ -31,6 +34,8 @@ Reporting Flow:
 ExecutionReport
 → report summary rendering
 → category detail rendering
+→ skipped item rendering
+→ execution result rendering
 → CLI output
 
 Design Principles:
@@ -52,7 +57,10 @@ It does NOT build, save, export, load, or mutate reports.
 # -------------------------------------------------
 from core.contracts import (
     CategoryReport,
-    ExecutionReport
+    DiscoverySkippedItem,
+    ExecutionReport,
+    ExecutionResult,
+    SkippedOperation
 )
 
 
@@ -103,6 +111,98 @@ def _render_category_reports(
 
 
 # -------------------------------------------------
+# PRIVATE: Render discovery skipped items
+# -------------------------------------------------
+def _render_discovery_skipped_items(
+    skipped_items: list[DiscoverySkippedItem]
+) -> None:
+    """
+    Renders discovery-stage skipped item data.
+
+    PURPOSE:
+    - centralize discovery skip rendering
+    - preserve item-level discovery traceability
+    - keep report output visually consistent
+    """
+
+    if not skipped_items:
+
+        print("No discovery skipped items.")
+        return
+
+    for skipped_item in skipped_items:
+
+        print(
+            f"- {skipped_item.name} "
+            f"({skipped_item.reason})"
+        )
+
+
+# -------------------------------------------------
+# PRIVATE: Render planning skipped operations
+# -------------------------------------------------
+def _render_planning_skipped_operations(
+    skipped_operations: list[SkippedOperation]
+) -> None:
+    """
+    Renders planning-stage skipped operation data.
+
+    PURPOSE:
+    - centralize planning skip rendering
+    - preserve operation-level planning traceability
+    - keep report output visually consistent
+    """
+
+    if not skipped_operations:
+
+        print("No planning skipped operations.")
+        return
+
+    for skipped_operation in skipped_operations:
+
+        label = skipped_operation.file or "unknown"
+
+        print(
+            f"- {label} "
+            f"({skipped_operation.reason})"
+        )
+
+
+# -------------------------------------------------
+# PRIVATE: Render execution results
+# -------------------------------------------------
+def _render_execution_results(
+    results: list[ExecutionResult]
+) -> None:
+    """
+    Renders operation-level execution result data.
+
+    PURPOSE:
+    - centralize execution result rendering
+    - keep top-level report rendering readable
+    - preserve consistent CLI output formatting
+    """
+
+    if not results:
+
+        print("No execution results available.")
+        return
+
+    for result in results:
+
+        line = (
+            f"- [{result.status}] "
+            f"{result.file}"
+        )
+
+        if result.reason:
+
+            line += f" ({result.reason})"
+
+        print(line)
+
+
+# -------------------------------------------------
 # PUBLIC: Render execution report
 # -------------------------------------------------
 def render_execution_report(
@@ -123,12 +223,12 @@ def render_execution_report(
     print("Smart File Organizer Report")
     print("===========================")
     print(f"Path: {report.path}")
-    print(f"Mode: {'dry-run' if report.execution.dry_run else 'live'}")
+    print(f"Mode: {'dry-run' if report.mover.dry_run else 'live'}")
 
     # -------------------------------------------------
     # DISCOVERY SECTION
     # -------------------------------------------------
-    _render_section_title("Discovery")
+    _render_section_title("Discovery Results")
 
     print(f"Discovered: {report.discovery.total_discovered}")
     print(f"Skipped: {report.discovery.total_skipped}")
@@ -139,27 +239,45 @@ def render_execution_report(
         report.discovery.categories
     )
 
+    _render_section_title("Discovery Skipped Items")
+
+    _render_discovery_skipped_items(
+        report.discovery.skipped_items
+    )
+
     # -------------------------------------------------
     # PLANNING SECTION
     # -------------------------------------------------
-    _render_section_title("Planning")
+    _render_section_title("Planning Results")
 
     print(f"Operations: {report.planning.total_operations}")
     print(f"Folders: {report.planning.total_folders}")
     print(f"Skipped: {report.planning.total_skipped}")
 
-    # -------------------------------------------------
-    # EXECUTION SECTION
-    # -------------------------------------------------
-    _render_section_title("Execution")
+    _render_section_title("Planning Skipped Operations")
 
-    print(f"Processed: {report.execution.total_processed}")
-    print(f"Failed: {report.execution.total_failed}")
+    _render_planning_skipped_operations(
+        report.planning.skipped_operations
+    )
 
-    _render_section_title("Execution Categories")
+    # -------------------------------------------------
+    # MOVER SECTION
+    # -------------------------------------------------
+    _render_section_title("Mover Results")
+
+    print(f"Processed: {report.mover.total_processed}")
+    print(f"Failed: {report.mover.total_failed}")
+
+    _render_section_title("Mover Categories")
 
     _render_category_reports(
-        report.execution.categories
+        report.mover.categories
+    )
+
+    _render_section_title("Mover Execution Results")
+
+    _render_execution_results(
+        report.mover.results
     )
 
     print()

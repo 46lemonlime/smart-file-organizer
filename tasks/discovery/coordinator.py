@@ -12,6 +12,7 @@ Responsibilities:
 - Apply discovery filtering rules
 - Apply classification rules
 - Normalize classified discovery output
+- Produce discovery-stage result contracts
 - Consume trusted discovery and configuration contracts
 - Provide discovery-level observability
 
@@ -29,7 +30,7 @@ Discovery Pipeline Overview:
 filesystem scanning
 → filtering
 → classification
-→ normalized structured output
+→ discovery result
 
 Discovery Components:
 - scanner.py:
@@ -49,21 +50,32 @@ Design Principles:
 
 Contract Usage:
 This module consumes trusted discovery and configuration contracts
-before passing normalized classified discovery data into downstream
+before producing a validated DiscoveryResult consumed by downstream
 execution systems.
 
 Output Contract:
-Returns classified discovery data using a dynamic
-config-driven structure.
+Returns a DiscoveryResult containing:
+- classified discovery data
+- skipped discovery items with reasons
 
 Example:
-{
-    "images": [],
-    "documents": [],
-    "videos": [],
-    "others": [],
-    "directories": []
-}
+
+DiscoveryResult(
+    classified_data={
+        "images": [],
+        "documents": [],
+        "videos": [],
+        "others": [],
+        "directories": []
+    },
+    skipped_items=[
+        DiscoverySkippedItem(
+            name=".DS_Store",
+            source_path="/path/.DS_Store",
+            reason="hidden_file"
+        )
+    ]
+)
 
 IMPORTANT:
 Configured categories are generated dynamically from config.yaml.
@@ -74,7 +86,7 @@ Reserved system categories:
 
 Failure Contract:
 - returns None if discovery pipeline fails
-- guarantees stable structure on successful execution
+- guarantees stable discovery results on successful execution
 - isolates discovery-stage failures
 
 Observability:
@@ -91,7 +103,9 @@ Structured logs are emitted throughout execution to provide:
 from core.contracts import (
     RawDiscoveryDataset,
     ClassifiedDiscovery,
-    DiscoveredItem
+    DiscoveredItem,
+    DiscoverySkippedItem,
+    DiscoveryResult
 )
 
 from utils.logger import log_info, log_warning
@@ -111,14 +125,14 @@ from core.events import (
 # -------------------------------------------------
 # PUBLIC: Discovery pipeline
 # -------------------------------------------------
-def discover_files(path: str) -> ClassifiedDiscovery | None:
+def discover_files(path: str) -> DiscoveryResult | None:
     """
     Executes full discovery pipeline.
     """
 
     log_info(
-    f"{DISCOVERY_START} | "
-    f"path={path}"
+        f"{DISCOVERY_START} | "
+        f"path={path}"
     )
 
     # -------------------------------------------------
@@ -157,7 +171,7 @@ def discover_files(path: str) -> ClassifiedDiscovery | None:
     result["others"] = []
     result["directories"] = []
 
-    skipped_total = 0
+    skipped_items: list[DiscoverySkippedItem] = []
 
     # -------------------------------------------------
     # PROCESS DISCOVERED ITEMS
@@ -177,13 +191,19 @@ def discover_files(path: str) -> ClassifiedDiscovery | None:
         # FILTERING
         # -------------------------------------------------
         skip, reason = should_skip_item(
-            item, 
+            item,
             config
         )
 
         if skip:
 
-            skipped_total += 1
+            skipped_items.append(
+                DiscoverySkippedItem(
+                    name=name,
+                    source_path=full_path,
+                    reason=reason
+                )
+            )
 
             log_info(
                 f"{DISCOVERY_SKIP} | "
@@ -240,12 +260,15 @@ def discover_files(path: str) -> ClassifiedDiscovery | None:
     ]
 
     summary_parts.append(
-        f"skipped={skipped_total}"
+        f"skipped={len(skipped_items)}"
     )
 
     log_info(
         f"{DISCOVERY_COMPLETE} | "
         + " ".join(summary_parts)
     )
-  
-    return result
+
+    return DiscoveryResult(
+        classified_data=result,
+        skipped_items=skipped_items
+    )

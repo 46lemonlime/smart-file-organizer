@@ -77,9 +77,12 @@ import os
 from core.contracts import (
     CategoryReport,
     DiscoveryReport,
+    DiscoverySkippedItem,
     ExecutionReport,
-    ExecutionSummaryReport,
-    PlanningReport
+    ExecutionResult,
+    MoverReport,
+    PlanningReport,
+    SkippedOperation
 )
 
 from core.events import (
@@ -134,6 +137,85 @@ def _build_category_reports(
 
 
 # -------------------------------------------------
+# PRIVATE: Build discovery skipped items
+# -------------------------------------------------
+def _build_discovery_skipped_items(
+    skipped_items_data: list[dict]
+) -> list[DiscoverySkippedItem]:
+    """
+    Rebuilds discovery skipped item contracts from serialized data.
+    """
+
+    skipped_items = []
+
+    for skipped_item_data in skipped_items_data:
+
+        skipped_items.append(
+            DiscoverySkippedItem(
+                name=skipped_item_data["name"],
+                source_path=skipped_item_data["source_path"],
+                reason=skipped_item_data["reason"]
+            )
+        )
+
+    return skipped_items
+
+
+# -------------------------------------------------
+# PRIVATE: Build skipped operations
+# -------------------------------------------------
+def _build_skipped_operations(
+    skipped_operations_data: list[dict]
+) -> list[SkippedOperation]:
+    """
+    Rebuilds skipped operation contracts from serialized data.
+    """
+
+    skipped_operations = []
+
+    for skipped_operation_data in skipped_operations_data:
+
+        skipped_operations.append(
+            SkippedOperation(
+                reason=skipped_operation_data["reason"],
+                file=skipped_operation_data.get("file"),
+                category=skipped_operation_data.get("category"),
+                source_path=skipped_operation_data.get("source_path")
+            )
+        )
+
+    return skipped_operations
+
+
+# -------------------------------------------------
+# PRIVATE: Build execution results
+# -------------------------------------------------
+def _build_execution_results(
+    results_data: list[dict]
+) -> list[ExecutionResult]:
+    """
+    Rebuilds execution result contracts from serialized data.
+    """
+
+    execution_results = []
+
+    for result_data in results_data:
+
+        execution_results.append(
+            ExecutionResult(
+                category=result_data["category"],
+                file=result_data["file"],
+                source_path=result_data["source_path"],
+                destination_path=result_data["destination_path"],
+                status=result_data["status"],
+                reason=result_data.get("reason")
+            )
+        )
+
+    return execution_results
+
+
+# -------------------------------------------------
 # PRIVATE: Build discovery report
 # -------------------------------------------------
 def _build_discovery_report(
@@ -141,7 +223,16 @@ def _build_discovery_report(
 ) -> DiscoveryReport:
     """
     Rebuilds a discovery report contract from serialized data.
+
+    IMPORTANT:
+    skipped_items defaults to an empty list for compatibility
+    with older persisted reports created before discovery
+    skipped-item tracking was introduced.
     """
+
+    skipped_items = _build_discovery_skipped_items(
+        discovery_data.get("skipped_items", [])
+    )
 
     return DiscoveryReport(
         path=discovery_data["path"],
@@ -149,7 +240,8 @@ def _build_discovery_report(
         total_skipped=discovery_data["total_skipped"],
         categories=_build_category_reports(
             discovery_data["categories"]
-        )
+        ),
+        skipped_items=skipped_items
     )
 
 
@@ -161,31 +253,49 @@ def _build_planning_report(
 ) -> PlanningReport:
     """
     Rebuilds a planning report contract from serialized data.
+
+    IMPORTANT:
+    skipped_operations defaults to an empty list for compatibility
+    with older persisted reports created before planning skipped
+    operation tracking was introduced.
     """
+
+    skipped_operations = _build_skipped_operations(
+        planning_data.get("skipped_operations", [])
+    )
 
     return PlanningReport(
         total_operations=planning_data["total_operations"],
         total_folders=planning_data["total_folders"],
-        total_skipped=planning_data["total_skipped"]
+        total_skipped=planning_data["total_skipped"],
+        skipped_operations=skipped_operations
     )
 
 
 # -------------------------------------------------
-# PRIVATE: Build execution summary report
+# PRIVATE: Build mover report
 # -------------------------------------------------
-def _build_execution_summary_report(
-    execution_data: dict
-) -> ExecutionSummaryReport:
+def _build_mover_report(
+    mover_data: dict
+) -> MoverReport:
     """
-    Rebuilds an execution summary report contract from serialized data.
+    Rebuilds a mover report contract from serialized data.
+
+    IMPORTANT:
+    results defaults to an empty list for compatibility with
+    older persisted reports created before operation-level
+    execution result tracking was introduced.
     """
 
-    return ExecutionSummaryReport(
-        dry_run=execution_data["dry_run"],
-        total_processed=execution_data["total_processed"],
-        total_failed=execution_data["total_failed"],
+    return MoverReport(
+        dry_run=mover_data["dry_run"],
+        total_processed=mover_data["total_processed"],
+        total_failed=mover_data["total_failed"],
         categories=_build_category_reports(
-            execution_data["categories"]
+            mover_data["categories"]
+        ),
+        results=_build_execution_results(
+            mover_data.get("results", [])
         )
     )
 
@@ -200,6 +310,16 @@ def _build_execution_report(
     Rebuilds a complete execution report contract from serialized data.
     """
 
+    # -------------------------------------------------
+    # MOVER DATA COMPATIBILITY
+    # -------------------------------------------------
+    # New reports use the "mover" key.
+    # Older reports may still use the previous "execution" key.
+    mover_data = report_data.get(
+        "mover",
+        report_data.get("execution")
+    )
+
     return ExecutionReport(
         path=report_data["path"],
         discovery=_build_discovery_report(
@@ -208,8 +328,8 @@ def _build_execution_report(
         planning=_build_planning_report(
             report_data["planning"]
         ),
-        execution=_build_execution_summary_report(
-            report_data["execution"]
+        mover=_build_mover_report(
+            mover_data
         )
     )
 

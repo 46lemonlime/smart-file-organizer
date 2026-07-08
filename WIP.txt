@@ -47,6 +47,14 @@ Implemented (FINAL COMMIT SUMMARY):
     - removed manual task validation from main.py
     - kept main.py focused as composition root
 
+[x] Rollback Preparation
+    - renamed executor stage to mover
+    - added operation-level execution results
+    - added discovery skipped item tracing
+    - added planning skipped operation reporting
+    - introduced mover-stage report contract
+    - expanded execution reports for future rollback support
+
 Planned to be implemented:
 
 [ ] Reporting Improvements

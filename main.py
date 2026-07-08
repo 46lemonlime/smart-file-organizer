@@ -75,7 +75,7 @@ import os
 # Import modules from the project
 from tasks.execution.planner import build_execution_plan
 from tasks.discovery.coordinator import discover_files
-from tasks.execution.executor import move_files
+from tasks.execution.mover import move_files
 from tasks.reporting.loader import load_latest_execution_report
 from tasks.reporting.reporter import render_execution_report
 
@@ -137,12 +137,12 @@ def handle_move(
     # -------------------------------------------------
     # STEP 1: DISCOVERY
     # -------------------------------------------------
-    classified_data = discover_files(path)
+    discovery_result = discover_files(path)
 
     # -------------------------------------------------
     # DISCOVERY VALIDATION
     # -------------------------------------------------
-    if classified_data is None:
+    if discovery_result is None:
 
         log_error(
             f"{DISCOVERY_FAILED} | "
@@ -151,6 +151,8 @@ def handle_move(
         )
 
         return
+
+    classified_data = discovery_result.classified_data
 
     # -------------------------------------------------
     # STEP 2: BUILD EXECUTION PLAN
@@ -174,7 +176,7 @@ def handle_move(
     # -------------------------------------------------
     # STEP 3: EXECUTE PLAN
     # -------------------------------------------------
-    execution_summary = move_files(
+    mover_report = move_files(
         plan.operations,
         dry_run
     )
@@ -184,7 +186,8 @@ def handle_move(
     # -------------------------------------------------
     discovery_report = build_discovery_report(
         path,
-        classified_data
+        classified_data,
+        skipped_items=discovery_result.skipped_items
     )
 
     planning_report = build_planning_report(
@@ -195,7 +198,7 @@ def handle_move(
         path,
         discovery_report,
         planning_report,
-        execution_summary
+        mover_report
     )
 
     # -------------------------------------------------
@@ -211,9 +214,9 @@ def handle_move(
 
     log_info(
         f"{MOVE_COMPLETE} | "
-        f"dry_run={execution_report.execution.dry_run} "
-        f"processed={execution_report.execution.total_processed} "
-        f"failed={execution_report.execution.total_failed}"
+        f"dry_run={execution_report.mover.dry_run} "
+        f"processed={execution_report.mover.total_processed} "
+        f"failed={execution_report.mover.total_failed}"
     )
 
 

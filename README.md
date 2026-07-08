@@ -30,8 +30,11 @@ It follows a config-driven and deterministic execution design:
 3. Classifies files using configurable rules
 4. Builds a deterministic execution plan
 5. Executes or simulates file system operations
-6. Logs structured execution traces for observability and debugging
+6. Captures operation-level execution results
 7. Generates a structured execution report for later inspection
+
+Execution reports preserve detailed discovery, planning, and mover-stage information, providing complete execution traceability and serving as the foundation for future rollback capabilities.
+
 
 The system prioritizes transparency, control, and reproducibility over raw automation speed.
 ```
@@ -50,7 +53,7 @@ Classifier
 Planner
       │
       ▼
-Executor
+Mover
 ```
 ---
 
@@ -78,6 +81,10 @@ Executor
    - automatic execution reports
    - JSON report persistence
    - latest report inspection via CLI
+   - operation-level execution trace
+   - discovery skipped-item reporting
+   - planning skipped-operation reporting
+   - rollback-ready execution reports
 
 - Observability
    - structured logging
@@ -105,16 +112,15 @@ The project uses centralized typed contracts located under:
 These contracts define the stable interfaces exchanged between
 all major subsystems.
 
-Configuration loader produces validated AppConfig contracts.
-
-Discovery produces validated DiscoveredItem contracts.
-
-Execution consumes validated ExecutionPlan contracts.
+Each pipeline stage owns its own contracts, allowing data to
+flow through the application without relying on dynamic
+dictionaries or loosely defined structures.
 
 This establishes a contract-first architecture that minimizes
 runtime validation across the pipeline.
 
 These contracts:
+
 - reduce dynamic dictionary usage
 - improve pipeline consistency
 - strengthen type safety
@@ -122,21 +128,27 @@ These contracts:
 
 Current shared contracts include:
 
+**Configuration**
 - AppConfig
 - CategoryConfig
-<br>
 
-- DiscoveryReport
-- PlanningReport
-- ExecutionSummaryReport
-- ExecutionReport
-<br>
-
+**Discovery**
 - DiscoveredItem
 - ClassifiedDiscovery
+- DiscoveryResult
+
+**Execution**
 - ExecutionOperation
-- ExecutionPlan
 - SkippedOperation
+- ExecutionPlan
+- ExecutionResult
+
+**Reporting**
+- CategoryReport
+- DiscoveryReport
+- PlanningReport
+- MoverReport
+- ExecutionReport
 
 ### 🔎 Logging System (Observability Design)
 
@@ -197,7 +209,7 @@ smart-file-organizer/
 │   │
 │   ├── execution/
 │   │   ├── planner.py
-│   │   └── executor.py
+│   │   └── mover.py
 │   │
 │   └── reporting/
 │       ├── generator.py
@@ -237,13 +249,13 @@ discovery/coordinator.py
    ↓
 execution/planner.py
    ↓
-execution/executor.py
+execution/mover.py
+   ↓
+Filesystem execution / Dry-run simulation
    ↓
 reporting/generator.py
    ↓
 reporting/saver.py
-   ↓
-Filesystem execution / Dry-run simulation
    ↓
 ExecutionReport (.json)
 ```
@@ -364,6 +376,7 @@ Smart File Organizer is a portfolio-grade automation engine demonstrating:
 - Modular design
 - Real-world file system automation
 - Scalable contract-driven software architecture
+- End-to-end execution traceability
 
 ### 📌 Development Principles
 
@@ -464,9 +477,8 @@ v0.4.0 and v0.5.0 were internal iterations merged into adjacent releases for ver
 
 ### 🚧 Current Limitations
 
-- Reporting subsystem suporting more renderers.
-- No undo / rollback mechanism
-- No operation history tracking
+- Additional report renderers not yet implemented.
+- No rollback execution yet
 - No plugin-based classification system
 - No AI-assisted file classification
 - CLI only (no graphical interface)
@@ -491,6 +503,11 @@ v0.4.0 and v0.5.0 were internal iterations merged into adjacent releases for ver
 - Argparse subcommands
 - Command-specific help output
 - Move/report command separation
+- Mover stage reporting
+- Operation-level execution results
+- Discovery skipped-item reporting
+- Planning skipped-operation reporting
+- Rollback-ready execution history
 
 ### v0.8.0
 

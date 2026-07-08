@@ -38,7 +38,7 @@ classified discovery data
 execution plan
 → planning report
 
-execution summary
+mover report
 → execution report assembly
 
 Design Principles:
@@ -62,9 +62,10 @@ from core.contracts import (
     CategoryReport,
     ClassifiedDiscovery,
     DiscoveryReport,
+    DiscoverySkippedItem,
     ExecutionPlan,
     ExecutionReport,
-    ExecutionSummaryReport,
+    MoverReport,
     PlanningReport
 )
 
@@ -111,15 +112,15 @@ def build_category_reports(
 def build_discovery_report(
     path: str,
     classified_data: ClassifiedDiscovery,
-    total_skipped: int = 0
+    skipped_items: list[DiscoverySkippedItem]
 ) -> DiscoveryReport:
     """
     Builds the discovery-stage report contract.
 
     IMPORTANT:
-    total_skipped defaults to 0 because the current discovery
-    pipeline calculates skipped items internally but does not yet
-    expose them as part of its output contract.
+    Skipped items are supplied by the discovery subsystem
+    through the DiscoveryResult contract to preserve
+    end-to-end discovery traceability.
     """
 
     category_reports = build_category_reports(
@@ -134,8 +135,9 @@ def build_discovery_report(
     return DiscoveryReport(
         path=path,
         total_discovered=total_discovered,
-        total_skipped=total_skipped,
-        categories=category_reports
+        total_skipped=len(skipped_items),
+        categories=category_reports,
+        skipped_items=skipped_items
     )
 
 
@@ -152,7 +154,8 @@ def build_planning_report(
     return PlanningReport(
         total_operations=len(plan.operations),
         total_folders=len(plan.folders_to_create),
-        total_skipped=len(plan.skipped)
+        total_skipped=len(plan.skipped),
+        skipped_operations=plan.skipped
     )
 
 
@@ -163,7 +166,7 @@ def build_execution_report(
     path: str,
     discovery: DiscoveryReport,
     planning: PlanningReport,
-    execution: ExecutionSummaryReport
+    mover: MoverReport
 ) -> ExecutionReport:
     """
     Builds the complete execution report contract.
@@ -177,5 +180,5 @@ def build_execution_report(
         path=path,
         discovery=discovery,
         planning=planning,
-        execution=execution
+        mover=mover
     )

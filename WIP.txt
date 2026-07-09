@@ -1,83 +1,85 @@
 # -------------------------------------------------
-# PHASE 9 — PRODUCT MATURITY & STABILIZATION
+# PHASE 9 — OPERATIONAL MATURITY
 # -------------------------------------------------
 
 Implemented (FINAL COMMIT SUMMARY):
 
-[x] Reporting Subsystem (First Implementation)
+[x] Reporting Subsystem
     - introduced reporting contracts
     - implemented report generation pipeline
     - implemented report persistence layer
     - implemented report loading layer
     - implemented CLI report presentation
     - automatic report generation after every execution
+    - automatic report generation after rollback
     - deterministic JSON report persistence
     - report rendering separated from report generation
     - composition-root integration
 
-[x] Reporting Architecture
-    - generator.py builds report contracts
-    - reporter.py presents reports
-    - saver.py persists reports
-    - loader.py reconstructs persisted reports
-    - reporting responsibilities fully separated
+[x] Rollback Subsystem
+    - introduced rollback contracts
+    - implemented rollback planner
+    - implemented rollback executor
+    - implemented rollback coordinator
+    - added rollback dry-run mode
+    - added rollback execution mode
+    - added rollback CLI command
+    - persisted rollback reports
+    - rendered rollback reports through CLI
 
-[x] Configuration Improvements
-    - report persistence directories moved into AppConfig
-    - removed hardcoded reporting paths
-    - reporting persistence is now configuration-driven
+[x] Report Persistence Improvements
+    - generalized report saver
+    - added rollback report directory configuration
+    - added rollback report loading support
+    - separated execution reports and rollback reports
 
-[x] Observability Improvements
-    - unified event taxonomy
-    - standardized structured event naming
-    - clarified log ownership across modules
-    - separated pipeline lifecycle events
-    - improved planning diagnostics
-    - normalized configuration logging
-    - removed obsolete events
-    - eliminated duplicated reporting events
+[x] Execution Traceability
+    - introduced DiscoveryResult contract
+    - introduced ExecutionResult contract
+    - added discovery skipped-item tracing
+    - added planning skipped-operation tracing
+    - renamed execution stage to mover
+    - introduced MoverReport contract
+    - expanded execution reports for rollback support
 
-[x] CLI & Developer Experience
-    - extracted CLI parsing into dedicated cli/parser.py module
-    - introduced argparse subcommands
-    - added dedicated move command
-    - added dedicated report command
-    - improved command-specific help output
-    - moved --dry-run under move command
-    - removed manual task validation from main.py
-    - kept main.py focused as composition root
+Planned:
 
-[x] Rollback Preparation
-    - renamed executor stage to mover
-    - added operation-level execution results
-    - added discovery skipped item tracing
-    - added planning skipped operation reporting
-    - introduced mover-stage report contract
-    - expanded execution reports for future rollback support
+[ ] Report Improvements
+    - load report by execution id
+        example:
+            report 20260708T143210
+    - keep latest report loading
+    - improve report presentation
 
-Planned to be implemented:
+[ ] v0.9.0 Release Preparation
+    - update README
+    - update roadmap
+    - update version history
+    - update semantic version
+    - prepare release changelog
 
-[ ] Reporting Improvements
-    - support multiple report renderers
-        - CLI
-        - JSON
-        - Markdown
-        - HTML
-        - GUI
-    - report history browsing
-    - report filtering
-    - report export pipeline
+# -------------------------------------------------
+# PHASE 10 — STABLE RELEASE PREPARATION
+# -------------------------------------------------
 
-[ ] Contract System Expansion
-    - introduce plugin contracts
-    - prepare AI classification contracts
-    - expand typed contract coverage
+Planned:
 
-[ ] Performance Optimization
-    - reduce repeated filesystem operations
-    - optimize discovery performance
-    - benchmark pipeline execution
-    - evaluate lazy iteration strategies
+[ ] Architecture Review
+    - audit module responsibilities
+    - remove remaining technical debt
+    - perform final architectural refactors where necessary
+
+[ ] Code Quality
+    - code cleanup
+    - improve cohesion and consistency
+    - remove obsolete code
+    - normalize naming
+    - review comments and docstrings
+
+[ ] Performance & Memory
+    - optimize filesystem operations
+    - reduce unnecessary allocations
+    - benchmark large directories
     - profile execution bottlenecks
 
 [ ] Testing & Stabilization
@@ -87,33 +89,13 @@ Planned to be implemented:
     - behavioral consistency audit
     - bug fixing
 
-[ ] Documentation Refinement
-    - final documentation review
-    - improve usage examples
-    - update architecture documentation
+[ ] Documentation
+    - final README review
     - synchronize documentation with implementation
+    - improve architecture documentation
+    - review usage examples
 
-Version polishing:
-- update semantic version to v0.9.0
-- update README roadmap
-- prepare release changelog
-
-
-# -------------------------------------------------
-# PHASE 10 — STABLE RELEASE PREPARATION
-# -------------------------------------------------
-
-Planned:
-
-[ ] Production Readiness
-    - final architecture review
-    - complete execution safety guarantees
-    - stabilize configuration system
-    - validate public interfaces
-
-[ ] Release Preparation
-    - final documentation pass
-    - final code cleanup
-    - remove development artifacts
+[ ] v1.0.0 Stable Release
+    - final semantic version update
     - portfolio-ready presentation
-    - v1.0.0 release
+    - stable public release

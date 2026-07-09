@@ -114,6 +114,7 @@ def _build_default_config() -> AppConfig:
         ignore_symlinks=True,
         reports_directory="reports",
         execution_reports_directory="executions",
+        rollback_reports_directory="rollbacks",
         categories={}
     )
 
@@ -150,6 +151,10 @@ def _validate_config(config: dict) -> AppConfig:
     execution_reports_directory = config.get(
         "execution_reports_directory",
         "executions"
+    )
+    rollback_reports_directory = config.get(
+        "rollback_reports_directory",
+        "rollbacks"
     )
 
     # type safety (IMPORTANT)
@@ -212,6 +217,16 @@ def _validate_config(config: dict) -> AppConfig:
         )
 
         execution_reports_directory = "executions"
+
+    if not isinstance(rollback_reports_directory, str):
+
+        log_error(
+            f"{CONFIG_INVALID} | "
+            f"key=rollback_reports_directory "
+            f"reason=not_string"
+        )
+
+        rollback_reports_directory = "rollbacks"
 
     # -----------------------------
     # CATEGORIES
@@ -300,6 +315,7 @@ def _validate_config(config: dict) -> AppConfig:
             ignore_symlinks=ignore_symlinks,
             reports_directory=reports_directory,
             execution_reports_directory=execution_reports_directory,
+            rollback_reports_directory=rollback_reports_directory,
             categories=categories
         )
 

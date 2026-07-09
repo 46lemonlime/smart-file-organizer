@@ -9,9 +9,14 @@ It automates file management workflows such as file sorting, dry-run simulation,
 ```bash
 python3 main.py move ~/Downloads
 ```
+**Rollback latest execution**
+```bash
+python3 main.py rollback
+```
 **Dry-run (safe simulation)**
 ```bash
 python3 main.py move ~/Downloads --dry-run
+python3 main.py rollback --dry-run
 ```
 **View latest execution report**
 ```bash
@@ -30,10 +35,14 @@ It follows a config-driven and deterministic execution design:
 3. Classifies files using configurable rules
 4. Builds a deterministic execution plan
 5. Executes or simulates file system operations
-6. Captures operation-level execution results
-7. Generates a structured execution report for later inspection
+6. Captures operation-level results
+7. Generates a structured execution and rollback reports
+8. Supports deterministic rollback of the latest execution
 
-Execution reports preserve detailed discovery, planning, and mover-stage information, providing complete execution traceability and serving as the foundation for future rollback capabilities.
+Execution and rollback reports preserve detailed discovery,
+planning, mover, and rollback information, providing complete
+operation traceability and allowing safe restoration of previous
+executions.
 
 
 The system prioritizes transparency, control, and reproducibility over raw automation speed.
@@ -60,6 +69,7 @@ Mover
 ## 2. ✨ Features
 - Command-line interface with dedicated commands
    - move
+   - rollback
    - report
 
 - Config-driven behavior
@@ -77,6 +87,12 @@ Mover
    - per-file failure isolation
    - planning/execution separation
 
+- Rollback
+   - deterministic rollback planning
+   - rollback dry-run
+   - rollback execution
+   - rollback report persistence
+
 - Reporting
    - automatic execution reports
    - JSON report persistence
@@ -84,7 +100,6 @@ Mover
    - operation-level execution trace
    - discovery skipped-item reporting
    - planning skipped-operation reporting
-   - rollback-ready execution reports
 
 - Observability
    - structured logging
@@ -195,7 +210,8 @@ smart-file-organizer/
 │   └── smartorg.log
 │
 ├── reports/
-│   └── executions/
+│   ├── executions/
+│   └── rollbacks/
 │
 ├── cli/
 │   └── parser.py
@@ -210,6 +226,11 @@ smart-file-organizer/
 │   ├── execution/
 │   │   ├── planner.py
 │   │   └── mover.py
+│   │
+│   ├── rollback/
+│   │   ├── planner.py
+│   │   ├── executor.py
+│   │   └── coordinator.py
 │   │
 │   └── reporting/
 │       ├── generator.py
@@ -259,6 +280,28 @@ reporting/saver.py
    ↓
 ExecutionReport (.json)
 ```
+#### rollback task
+```
+CLI Input
+   ↓
+parser.py
+   ↓
+main.py
+   ↓
+rollback/coordinator.py
+   │
+   ├── reporting/loader.py
+   ├── rollback/planner.py
+   └── rollback/executor.py
+   ↓
+Filesystem rollback / Dry-run simulation
+   ↓
+reporting/saver.py
+   ↓
+RollbackReport (.json)
+   ↓
+reporting/reporter.py
+```
 
 #### report task
 
@@ -280,32 +323,64 @@ CLI Output
 
 ## 4. 🧰 Usage & Execution
 
+### ▶️ Command Reference
 
-### ▶️ How to Use
-Run the CLI tool from the terminal:
+Run the application from the terminal using one of the available commands:
 
 ```bash
-python3 main.py <task> <path>
+python3 main.py <command> [arguments]
 ```
 
-#### 📦 Move & organize files
+#### Move
+
+Organize the contents of a directory according to the configured
+classification rules.
 
 ```bash
 python3 main.py move /path/to/directory
 ```
 
-#### Example:
+Example:
 
 ```bash
-python3 main.py move /Users/yourname/Downloads
+python3 main.py move ~/Downloads
 ```
 
-#### 📊 View latest execution report
+
+#### Move (Dry-run)
+
+Simulate the organization process without modifying the filesystem.
+
 ```bash
-python3 main.py report
+python3 main.py move /path/to/directory --dry-run
 ```
 
-#### Example:
+Example:
+
+```bash
+python3 main.py move ~/Downloads --dry-run
+```
+
+
+#### Rollback
+
+Restore the latest execution using the most recent execution report.
+
+```bash
+python3 main.py rollback
+```
+
+#### Rollback (Dry-run)
+
+Simulate the rollback without modifying the filesystem.
+
+```bash
+python3 main.py rollback --dry-run
+```
+
+#### Report
+
+Display the latest persisted execution report.
 
 ```bash
 python3 main.py report
@@ -348,6 +423,9 @@ Downstream modules never access raw YAML directly.
 - ignore_hidden_files → safe handling of system files  
 - dry_run → default execution mode  
 - categories → file classification rules  
+- reports_directory → root report location
+- execution_reports_directory → execution report storage
+- rollback_reports_directory → rollback report storage
 
 
 ### Example
@@ -457,28 +535,30 @@ v0.4.0 and v0.5.0 were internal iterations merged into adjacent releases for ver
 * [x] Reduced module coupling
 * [x] Improved subsystem cohesion
 
-#### Phase 9 - v0.9.0 Product Maturity & Stabilization
+#### Phase 9 - v0.9.0 Operational Maturity
 * [x] Reporting subsystem
 * [x] Reporting architecture
 * [x] Configuration-driven report persistence
+* [x] Rollback subsystem
+* [x] Execution traceability
 * [x] Observability improvements
 * [x] CLI & developer experience
-* [ ] Performance optimization
-* [ ] Testing and stabilization
-* [ ] Documentation refinement
+* [ ] Execution report history
 
-#### Phase 10 - v1.0.0 Stable Release
-* [ ] Production-ready execution pipeline
-* [ ] Stable configuration system
-* [ ] Complete execution safety guarantees
-* [ ] Fully consistent observability system
-* [ ] Portfolio-ready architecture and documentation
-* [ ] Final codebase cleanup and release preparation
+#### Phase 10 - v1.0.0 Stable Release Preparation
+* [ ] Code cleanup
+* [ ] Architecture review and responsibility audit
+* [ ] Performance and memory optimization
+* [ ] Style cohesion and consistency
+* [ ] Testing and stabilization
+* [ ] Documentation review and synchronization
 
 ### 🚧 Current Limitations
 
-- Additional report renderers not yet implemented.
-- No rollback execution yet
+- Additional report renderers not yet implemented
+- Rollback currently restores only the latest execution report
+- Report history browsing is not yet available
+- Reports cannot yet be loaded by execution identifier
 - No plugin-based classification system
 - No AI-assisted file classification
 - CLI only (no graphical interface)
@@ -508,6 +588,16 @@ v0.4.0 and v0.5.0 were internal iterations merged into adjacent releases for ver
 - Discovery skipped-item reporting
 - Planning skipped-operation reporting
 - Rollback-ready execution history
+- Rollback subsystem
+- Rollback planner
+- Rollback executor
+- Rollback coordinator
+- Rollback CLI command
+- Rollback reports
+- Rollback dry-run mode
+- Generic report persistence
+- Generic report loader
+- Automatic CLI report rendering
 
 ### v0.8.0
 
@@ -584,9 +674,7 @@ v0.4.0 and v0.5.0 were internal iterations merged into adjacent releases for ver
 ## 8. 👤 Author
 
 
-**46lemonlime**
+Designed and developed by **46lemonlime**
 GitHub: https://github.com/46lemonlime
-
-Creator, developer and maintainer.
 
 Built as a portfolio project focused on software architecture, maintainability and safe automation.

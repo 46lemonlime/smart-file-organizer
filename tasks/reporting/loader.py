@@ -4,13 +4,13 @@
 """
 Smart File Organizer - Report Persistence Loader
 
-This module loads persisted structured execution reports.
+This module loads persisted structured application reports.
 
 Responsibilities:
-- Locate saved execution reports
-- Read execution report JSON files
+- Locate saved report files
+- Read report JSON files
 - Deserialize report data
-- Rebuild execution report contracts
+- Rebuild report contracts
 - Return validated report contracts
 
 Architecture Role:
@@ -33,7 +33,7 @@ Loading Flow:
 JSON file
 → deserialization
 → contract reconstruction
-→ validated ExecutionReport
+→ validated report contract
 
 Configuration:
 The report location is injected by the application's
@@ -82,6 +82,8 @@ from core.contracts import (
     ExecutionResult,
     MoverReport,
     PlanningReport,
+    RollbackReport,
+    RollbackResult,
     SkippedOperation
 )
 
@@ -96,19 +98,19 @@ from utils.logger import log_info, log_warning, log_error
 
 
 # -------------------------------------------------
-# PRIVATE: Build execution reports directory
+# PRIVATE: Build reports directory
 # -------------------------------------------------
-def _build_execution_reports_directory(
+def _build_reports_directory(
     reports_directory: str,
-    execution_reports_directory: str
+    report_subdirectory: str
 ) -> str:
     """
-    Builds the execution reports directory path.
+    Builds a report directory path.
     """
 
     return os.path.join(
         reports_directory,
-        execution_reports_directory
+        report_subdirectory
     )
 
 
@@ -213,6 +215,34 @@ def _build_execution_results(
         )
 
     return execution_results
+
+
+# -------------------------------------------------
+# PRIVATE: Build rollback results
+# -------------------------------------------------
+def _build_rollback_results(
+    results_data: list[dict]
+) -> list[RollbackResult]:
+    """
+    Rebuilds rollback result contracts from serialized data.
+    """
+
+    rollback_results = []
+
+    for result_data in results_data:
+
+        rollback_results.append(
+            RollbackResult(
+                category=result_data["category"],
+                file=result_data["file"],
+                source_path=result_data["source_path"],
+                destination_path=result_data["destination_path"],
+                status=result_data["status"],
+                reason=result_data.get("reason")
+            )
+        )
+
+    return rollback_results
 
 
 # -------------------------------------------------
@@ -335,28 +365,48 @@ def _build_execution_report(
 
 
 # -------------------------------------------------
-# PRIVATE: List report files
+# PRIVATE: Build rollback report
 # -------------------------------------------------
-def _get_execution_report_files(
-    execution_reports_path: str
-) -> list[str]:
+def _build_rollback_report(
+    report_data: dict
+) -> RollbackReport:
     """
-    Returns saved execution report file paths.
+    Rebuilds a rollback report contract from serialized data.
     """
 
-    if not os.path.exists(execution_reports_path):
+    return RollbackReport(
+        dry_run=report_data["dry_run"],
+        total_processed=report_data["total_processed"],
+        total_failed=report_data["total_failed"],
+        results=_build_rollback_results(
+            report_data.get("results", [])
+        )
+    )
+
+
+# -------------------------------------------------
+# PRIVATE: List report files
+# -------------------------------------------------
+def _get_report_files(
+    reports_path: str
+) -> list[str]:
+    """
+    Returns saved report file paths.
+    """
+
+    if not os.path.exists(reports_path):
 
         return []
 
     report_files = []
 
-    for filename in os.listdir(execution_reports_path):
+    for filename in os.listdir(reports_path):
 
         if filename.endswith(".json"):
 
             report_files.append(
                 os.path.join(
-                    execution_reports_path,
+                    reports_path,
                     filename
                 )
             )
@@ -394,13 +444,13 @@ def load_latest_execution_report(
         # composition root to keep persistence independent
         # from configuration loading.
         execution_reports_path = (
-            _build_execution_reports_directory(
+            _build_reports_directory(
                 reports_directory,
                 execution_reports_directory
             )
         )
 
-        report_files = _get_execution_report_files(
+        report_files = _get_report_files(
             execution_reports_path
         )
 
@@ -442,6 +492,90 @@ def load_latest_execution_report(
         log_error(
             f"{REPORT_LOAD_FAILED} | "
             f"path={execution_reports_path}",
+            error=e
+        )
+
+        raise
+
+
+# -------------------------------------------------
+# PUBLIC: Load latest rollback report
+# -------------------------------------------------
+def load_latest_rollback_report(
+    reports_directory: str,
+    rollback_reports_directory: str
+) -> RollbackReport | None:
+    """
+    Loads the latest saved rollback report.
+
+    RETURNS:
+        RollbackReport | None
+
+    IMPORTANT:
+    This function loads persisted rollback report data and
+    rebuilds validated RollbackReport contracts. It does NOT
+    render, save, generate, or list reports.
+    """
+
+    try:
+
+        log_info(REPORT_LOAD_START)
+
+        # -------------------------------------------------
+        # BUILD REPORT DIRECTORY
+        # -------------------------------------------------
+        # The report location is injected by the application
+        # composition root to keep persistence independent
+        # from configuration loading.
+        rollback_reports_path = (
+            _build_reports_directory(
+                reports_directory,
+                rollback_reports_directory
+            )
+        )
+
+        report_files = _get_report_files(
+            rollback_reports_path
+        )
+
+        if not report_files:
+
+            log_warning(
+                f"{REPORT_NOT_FOUND} | "
+                f"path={rollback_reports_path}"
+            )
+
+            return None
+
+        latest_report_path = max(
+            report_files,
+            key=os.path.getmtime
+        )
+
+        with open(
+            latest_report_path,
+            "r",
+            encoding="utf-8"
+        ) as file:
+
+            report_data = json.load(file)
+
+        rollback_report = _build_rollback_report(
+            report_data
+        )
+
+        log_info(
+            f"{REPORT_LOAD_COMPLETE} | "
+            f"path={latest_report_path}"
+        )
+
+        return rollback_report
+
+    except Exception as e:
+
+        log_error(
+            f"{REPORT_LOAD_FAILED} | "
+            f"path={rollback_reports_path}",
             error=e
         )
 

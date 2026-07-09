@@ -17,6 +17,7 @@ This module intentionally contains NO logic related to:
 - filesystem discovery
 - execution planning
 - filesystem mutations
+- rollback execution
 - reporting
 - task routing
 
@@ -33,6 +34,7 @@ terminal input
 Supported Commands:
 - move
 - report
+- rollback
 
 Design Principles:
 - CLI-only responsibility
@@ -105,6 +107,20 @@ def parse_args() -> argparse.Namespace:
     subparsers.add_parser(
         "report",
         help="Display the latest execution report."
+    )
+
+    # -------------------------------------------------
+    # ROLLBACK COMMAND
+    # -------------------------------------------------
+    rollback_parser = subparsers.add_parser(
+        "rollback",
+        help="Rollback the latest execution."
+    )
+
+    rollback_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Simulate rollback operations."
     )
 
     return parser.parse_args()

@@ -19,6 +19,7 @@ This module acts as the canonical source of truth for:
 - execution operations
 - execution planning structures
 - execution results
+- rollback structures
 - runtime configuration
 - reporting structures
 
@@ -26,6 +27,7 @@ IMPORTANT:
 These contracts are shared across multiple subsystems:
 - discovery
 - execution
+- rollback
 - reporting
 
 DESIGN PRINCIPLES:
@@ -201,6 +203,7 @@ class AppConfig:
     ignore_symlinks: bool
     reports_directory: str
     execution_reports_directory: str
+    rollback_reports_directory: str
     categories: dict[str, CategoryConfig]
 
     def __post_init__(self):
@@ -238,6 +241,11 @@ class AppConfig:
         _validate_non_empty_string(
             self.execution_reports_directory,
             "execution_reports_directory"
+        )
+
+        _validate_non_empty_string(
+            self.rollback_reports_directory,
+            "rollback_reports_directory"
         )
 
         for category_name, category_config in self.categories.items():
@@ -647,7 +655,225 @@ class ExecutionResult:
 
 
 # -------------------------------------------------
-# 6. REPORTING CONTRACTS
+# 6. ROLLBACK CONTRACTS
+# -------------------------------------------------
+# ROLLBACK OPERATION CONTRACT
+@dataclass
+class RollbackOperation:
+    """
+    Represents a single rollback filesystem operation.
+
+    CONTRACT GUARANTEES:
+    - category is a non-empty string
+    - file is a non-empty string
+    - source_path is a non-empty string
+    - destination_path is a non-empty string
+
+    IMPORTANT:
+    A rollback operation reverses a successful mover result:
+    - source_path is the current file location
+    - destination_path is the original file location
+    """
+
+    category: str
+    file: str
+    source_path: str
+    destination_path: str
+
+    def __post_init__(self):
+
+        _validate_non_empty_string(
+            self.category,
+            "category"
+        )
+
+        _validate_non_empty_string(
+            self.file,
+            "file"
+        )
+
+        _validate_non_empty_string(
+            self.source_path,
+            "source_path"
+        )
+
+        _validate_non_empty_string(
+            self.destination_path,
+            "destination_path"
+        )
+
+
+# ROLLBACK PLAN CONTRACT
+@dataclass
+class RollbackPlan:
+    """
+    Represents a deterministic rollback plan generated from
+    a persisted execution report.
+
+    CONTRACT GUARANTEES:
+    - operations is list[RollbackOperation]
+    - skipped is list[SkippedOperation]
+
+    IMPORTANT:
+    This contract describes rollback intent only.
+    It does NOT indicate rollback execution success.
+    """
+
+    operations: list[RollbackOperation]
+    skipped: list[SkippedOperation]
+
+    def __post_init__(self):
+
+        _validate_list_type(
+            self.operations,
+            "operations"
+        )
+
+        _validate_list_type(
+            self.skipped,
+            "skipped"
+        )
+
+        for operation in self.operations:
+
+            if not isinstance(
+                operation,
+                RollbackOperation
+            ):
+
+                raise TypeError(
+                    "operations must contain "
+                    "RollbackOperation objects"
+                )
+
+        for skipped_operation in self.skipped:
+
+            if not isinstance(
+                skipped_operation,
+                SkippedOperation
+            ):
+
+                raise TypeError(
+                    "skipped must contain "
+                    "SkippedOperation objects"
+                )
+
+
+# ROLLBACK RESULT CONTRACT
+@dataclass
+class RollbackResult:
+    """
+    Represents the result of a rollback filesystem operation.
+
+    CONTRACT GUARANTEES:
+    - category is a non-empty string
+    - file is a non-empty string
+    - source_path is a non-empty string
+    - destination_path is a non-empty string
+    - status is a non-empty string
+    - reason is optional but must be valid if provided
+    """
+
+    category: str
+    file: str
+    source_path: str
+    destination_path: str
+    status: str
+    reason: Optional[str] = None
+
+    def __post_init__(self):
+
+        _validate_non_empty_string(
+            self.category,
+            "category"
+        )
+
+        _validate_non_empty_string(
+            self.file,
+            "file"
+        )
+
+        _validate_non_empty_string(
+            self.source_path,
+            "source_path"
+        )
+
+        _validate_non_empty_string(
+            self.destination_path,
+            "destination_path"
+        )
+
+        _validate_non_empty_string(
+            self.status,
+            "status"
+        )
+
+        if self.reason is not None:
+
+            _validate_non_empty_string(
+                self.reason,
+                "reason"
+            )
+
+
+# ROLLBACK REPORT CONTRACT
+@dataclass
+class RollbackReport:
+    """
+    Represents the rollback stage report.
+
+    CONTRACT GUARANTEES:
+    - dry_run is boolean
+    - total_processed is a non-negative integer
+    - total_failed is a non-negative integer
+    - results is list[RollbackResult]
+
+    IMPORTANT:
+    Dry-run and real rollback share the same report structure.
+    """
+
+    dry_run: bool
+    total_processed: int
+    total_failed: int
+    results: list[RollbackResult]
+
+    def __post_init__(self):
+
+        _validate_bool_type(
+            self.dry_run,
+            "dry_run"
+        )
+
+        _validate_non_negative_int(
+            self.total_processed,
+            "total_processed"
+        )
+
+        _validate_non_negative_int(
+            self.total_failed,
+            "total_failed"
+        )
+
+        _validate_list_type(
+            self.results,
+            "results"
+        )
+
+        for result in self.results:
+
+            if not isinstance(
+                result,
+                RollbackResult
+            ):
+
+                raise TypeError(
+                    "results must contain "
+                    "RollbackResult objects"
+                )
+
+
+# -------------------------------------------------
+# 7. REPORTING CONTRACTS
 # -------------------------------------------------
 # CATEGORY REPORT CONTRACT
 @dataclass

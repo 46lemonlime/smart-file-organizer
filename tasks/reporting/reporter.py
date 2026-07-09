@@ -4,15 +4,17 @@
 """
 Smart File Organizer - Reporting Presentation Layer
 
-This module renders structured execution reports.
+This module renders structured application reports.
 
 Responsibilities:
 - Render execution reports for CLI output
+- Render rollback reports for CLI output
 - Present report summaries
 - Present category-level report details
 - Present skipped discovery items
 - Present skipped planning operations
 - Present operation-level execution results
+- Present operation-level rollback results
 - Keep report presentation separate from persistence
 
 Architecture Role:
@@ -22,6 +24,7 @@ This file intentionally contains NO logic related to:
 - file classification
 - execution planning
 - filesystem mutations
+- rollback execution
 - report generation
 - report persistence
 - JSON export
@@ -31,11 +34,9 @@ Instead, it functions as the reporting presentation layer
 responsible for rendering already-built reporting contracts.
 
 Reporting Flow:
-ExecutionReport
+Report contract
 → report summary rendering
-→ category detail rendering
-→ skipped item rendering
-→ execution result rendering
+→ detail rendering
 → CLI output
 
 Design Principles:
@@ -60,6 +61,8 @@ from core.contracts import (
     DiscoverySkippedItem,
     ExecutionReport,
     ExecutionResult,
+    RollbackReport,
+    RollbackResult,
     SkippedOperation
 )
 
@@ -203,6 +206,40 @@ def _render_execution_results(
 
 
 # -------------------------------------------------
+# PRIVATE: Render rollback results
+# -------------------------------------------------
+def _render_rollback_results(
+    results: list[RollbackResult]
+) -> None:
+    """
+    Renders operation-level rollback result data.
+
+    PURPOSE:
+    - centralize rollback result rendering
+    - keep top-level report rendering readable
+    - preserve consistent CLI output formatting
+    """
+
+    if not results:
+
+        print("No rollback results available.")
+        return
+
+    for result in results:
+
+        line = (
+            f"- [{result.status}] "
+            f"{result.file}"
+        )
+
+        if result.reason:
+
+            line += f" ({result.reason})"
+
+        print(line)
+
+
+# -------------------------------------------------
 # PUBLIC: Render execution report
 # -------------------------------------------------
 def render_execution_report(
@@ -278,6 +315,45 @@ def render_execution_report(
 
     _render_execution_results(
         report.mover.results
+    )
+
+    print()
+
+
+# -------------------------------------------------
+# PUBLIC: Render rollback report
+# -------------------------------------------------
+def render_rollback_report(
+    report: RollbackReport
+) -> None:
+    """
+    Renders a complete rollback report through CLI output.
+
+    IMPORTANT:
+    This function only presents rollback report data.
+    It does NOT generate, persist, export, load, or mutate reports.
+    """
+
+    # -------------------------------------------------
+    # REPORT HEADER
+    # -------------------------------------------------
+    print()
+    print("Smart File Organizer Rollback Report")
+    print("====================================")
+    print(f"Mode: {'dry-run' if report.dry_run else 'live'}")
+
+    # -------------------------------------------------
+    # ROLLBACK SECTION
+    # -------------------------------------------------
+    _render_section_title("Rollback Results")
+
+    print(f"Processed: {report.total_processed}")
+    print(f"Failed: {report.total_failed}")
+
+    _render_section_title("Rollback Execution Results")
+
+    _render_rollback_results(
+        report.results
     )
 
     print()

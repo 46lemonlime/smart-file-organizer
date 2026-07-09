@@ -21,6 +21,7 @@ This file intentionally contains NO logic related to:
 - file classification
 - execution planning
 - filesystem mutations
+- rollback implementation
 - reporting implementation
 
 Instead, it functions as the composition root responsible
@@ -43,6 +44,8 @@ Subsystems:
     Filesystem discovery and classification
 - execution:
     Planning and filesystem mutations
+- rollback:
+    Rollback workflow coordination
 - reporting:
     Execution reporting
 
@@ -77,7 +80,13 @@ from tasks.execution.planner import build_execution_plan
 from tasks.discovery.coordinator import discover_files
 from tasks.execution.mover import move_files
 from tasks.reporting.loader import load_latest_execution_report
-from tasks.reporting.reporter import render_execution_report
+
+from tasks.reporting.reporter import (
+    render_execution_report,
+    render_rollback_report
+)
+
+from tasks.rollback.coordinator import rollback_latest_execution
 
 from cli.parser import parse_args
 
@@ -87,7 +96,7 @@ from tasks.reporting.generator import (
     build_execution_report
 )
 
-from tasks.reporting.saver import save_execution_report
+from tasks.reporting.saver import save_report
 
 from utils.logger import log_info, log_error
 from utils.config_loader import get_config
@@ -126,7 +135,8 @@ def handle_move(
     the application composition root.
 
     This handler coordinates report generation while
-    delegating persistence to the reporting subsystem.
+    delegating persistence and presentation to the
+    reporting subsystem.
     """
 
     log_info(
@@ -204,12 +214,17 @@ def handle_move(
     # -------------------------------------------------
     # STEP 5: SAVE EXECUTION REPORT
     # -------------------------------------------------
-    # Reports are generated automatically for every move
-    # execution, but they are not rendered automatically.
-    save_execution_report(
+    save_report(
         execution_report,
         reports_directory,
         execution_reports_directory
+    )
+
+    # -------------------------------------------------
+    # STEP 6: RENDER EXECUTION REPORT
+    # -------------------------------------------------
+    render_execution_report(
+        execution_report
     )
 
     log_info(
@@ -271,6 +286,58 @@ def handle_report(
 
 
 # -------------------------------------------------
+# ROLLBACK HANDLER
+# -------------------------------------------------
+def handle_rollback(
+    reports_directory: str,
+    execution_reports_directory: str,
+    rollback_reports_directory: str,
+    dry_run: bool
+) -> None:
+    """
+    Executes rollback workflow for the latest execution report.
+
+    IMPORTANT:
+    Rollback execution is delegated to the rollback subsystem.
+    This handler only injects runtime dependencies and routes
+    the workflow from the composition root.
+    """
+
+    rollback_report = rollback_latest_execution(
+        reports_directory,
+        execution_reports_directory,
+        dry_run
+    )
+
+    if rollback_report is None:
+
+        return
+
+    # -------------------------------------------------
+    # SAVE ROLLBACK REPORT
+    # -------------------------------------------------
+    save_report(
+        rollback_report,
+        reports_directory,
+        rollback_reports_directory
+    )
+
+    # -------------------------------------------------
+    # RENDER ROLLBACK REPORT
+    # -------------------------------------------------
+    render_rollback_report(
+        rollback_report
+    )
+
+    log_info(
+        f"rollback_complete | "
+        f"dry_run={rollback_report.dry_run} "
+        f"processed={rollback_report.total_processed} "
+        f"failed={rollback_report.total_failed}"
+    )
+
+
+# -------------------------------------------------
 # MAIN
 # -------------------------------------------------
 def main() -> None:
@@ -293,6 +360,10 @@ def main() -> None:
 
     execution_reports_directory = (
         config.execution_reports_directory
+    )
+
+    rollback_reports_directory = (
+        config.rollback_reports_directory
     )
 
     # -------------------------------------------------
@@ -335,6 +406,15 @@ def main() -> None:
         handle_report(
             reports_directory,
             execution_reports_directory
+        )
+
+    elif task == "rollback":
+
+        handle_rollback(
+            reports_directory,
+            execution_reports_directory,
+            rollback_reports_directory,
+            dry_run
         )
 
 

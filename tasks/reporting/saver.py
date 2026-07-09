@@ -4,11 +4,11 @@
 """
 Smart File Organizer - Report Persistence Saver
 
-This module persists structured execution reports.
+This module persists structured application reports.
 
 Responsibilities:
-- Serialize execution reports
-- Persist execution reports as JSON files
+- Serialize application reports
+- Persist reports as JSON files
 - Create report output directories
 - Return the saved report path
 
@@ -29,7 +29,7 @@ Instead, it functions as the reporting persistence layer
 responsible only for saving already-built report contracts.
 
 Persistence Flow:
-ExecutionReport
+report contract
 → JSON serialization
 → filesystem persistence
 → saved report path
@@ -71,7 +71,10 @@ import os
 from dataclasses import asdict
 from datetime import datetime
 
-from core.contracts import ExecutionReport
+from core.contracts import (
+    ExecutionReport,
+    RollbackReport
+)
 
 from utils.logger import log_info, log_error
 
@@ -82,34 +85,34 @@ from core.events import (
 
 
 # -------------------------------------------------
-# PRIVATE: Build execution reports directory
+# PRIVATE: Build reports directory
 # -------------------------------------------------
-def _build_execution_reports_directory(
+def _build_reports_directory(
     reports_directory: str,
-    execution_reports_directory: str
+    report_subdirectory: str
 ) -> str:
     """
-    Builds the execution reports directory path.
+    Builds a report directory path.
     """
 
     return os.path.join(
         reports_directory,
-        execution_reports_directory
+        report_subdirectory
     )
 
 
 # -------------------------------------------------
 # PRIVATE: Ensure reports directory
 # -------------------------------------------------
-def _ensure_execution_reports_directory(
-    execution_reports_path: str
+def _ensure_reports_directory(
+    reports_path: str
 ) -> None:
     """
-    Ensures that the execution reports directory exists.
+    Ensures that a report directory exists.
     """
 
     os.makedirs(
-        execution_reports_path,
+        reports_path,
         exist_ok=True
     )
 
@@ -140,15 +143,15 @@ def _build_report_filename() -> str:
 
 
 # -------------------------------------------------
-# PUBLIC: Save execution report
+# PUBLIC: Save report
 # -------------------------------------------------
-def save_execution_report(
-    report: ExecutionReport,
+def save_report(
+    report: ExecutionReport | RollbackReport,
     reports_directory: str,
-    execution_reports_directory: str
+    report_subdirectory: str
 ) -> str:
     """
-    Saves an execution report as a JSON file.
+    Saves a report contract as a JSON file.
 
     RETURNS:
         str: path to the saved report file
@@ -166,21 +169,21 @@ def save_execution_report(
         # The report output location is injected by the
         # application composition root to keep persistence
         # independent from configuration loading.
-        execution_reports_path = (
-            _build_execution_reports_directory(
+        reports_path = (
+            _build_reports_directory(
                 reports_directory,
-                execution_reports_directory
+                report_subdirectory
             )
         )
 
-        _ensure_execution_reports_directory(
-            execution_reports_path
+        _ensure_reports_directory(
+            reports_path
         )
 
         filename = _build_report_filename()
 
         report_path = os.path.join(
-            execution_reports_path,
+            reports_path,
             filename
         )
 

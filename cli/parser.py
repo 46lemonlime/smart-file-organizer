@@ -10,6 +10,8 @@ Responsibilities:
 - Parse command-line arguments
 - Validate CLI syntax
 - Return parsed execution arguments
+- Parse report history actions and references
+- Parse report deletion requests
 
 Architecture Role:
 This module intentionally contains NO logic related to:
@@ -18,6 +20,9 @@ This module intentionally contains NO logic related to:
 - execution planning
 - filesystem mutations
 - rollback execution
+- report loading
+- report history resolution
+- report deletion
 - reporting
 - task routing
 
@@ -36,6 +41,18 @@ Supported Commands:
 - report
 - rollback
 
+Report Actions:
+- no action:
+    display the latest execution report
+- list:
+    display unified report history
+- numeric index:
+    select a report from the history list
+- report identifier:
+    select a report by its timestamp-based identifier
+- clear <reference>:
+    request deletion of a report by index or identifier
+
 Design Principles:
 - CLI-only responsibility
 - deterministic argument parsing
@@ -46,7 +63,8 @@ Design Principles:
 
 IMPORTANT:
 This module only parses command-line arguments.
-It does NOT execute application logic.
+It does NOT execute application logic, resolve report references,
+or delete persisted reports.
 """
 
 # -------------------------------------------------
@@ -104,9 +122,32 @@ def parse_args() -> argparse.Namespace:
     # -------------------------------------------------
     # REPORT COMMAND
     # -------------------------------------------------
-    subparsers.add_parser(
+    report_parser = subparsers.add_parser(
         "report",
-        help="Display the latest execution report."
+        help=(
+            "Display, list, or delete persisted reports."
+        )
+    )
+
+    report_parser.add_argument(
+        "action",
+        nargs="?",
+        default=None,
+        help=(
+            "Use 'list', 'clear', a history index, or a "
+            "report identifier. Defaults to the latest "
+            "execution report."
+        )
+    )
+
+    report_parser.add_argument(
+        "reference",
+        nargs="?",
+        default=None,
+        help=(
+            "Report history index or identifier used with "
+            "the 'clear' action."
+        )
     )
 
     # -------------------------------------------------

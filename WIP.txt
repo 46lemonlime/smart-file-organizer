@@ -27,10 +27,29 @@ Implemented (FINAL COMMIT SUMMARY):
     - persisted rollback reports
     - rendered rollback reports through CLI
 
+[x] Report History
+    - unified report history
+    - chronological report ordering
+    - report selection by history index
+    - report selection by report identifier
+    - latest report loading
+    - execution report loading
+    - rollback report loading
+    - report history CLI command
+
+[x] Report Cleanup
+    - delete report by history index
+    - delete report by report identifier
+    - clear execution reports
+    - clear rollback reports
+    - clear all persisted reports
+    - clear application logs
+
 [x] Report Persistence Improvements
     - generalized report saver
+    - generalized report loader
+    - generalized report cleaner
     - added rollback report directory configuration
-    - added rollback report loading support
     - separated execution reports and rollback reports
 
 [x] Execution Traceability
@@ -41,22 +60,6 @@ Implemented (FINAL COMMIT SUMMARY):
     - renamed execution stage to mover
     - introduced MoverReport contract
     - expanded execution reports for rollback support
-
-Planned:
-
-[ ] Report Improvements
-    - load report by execution id
-        example:
-            report 20260708T143210
-    - keep latest report loading
-    - improve report presentation
-
-[ ] v0.9.0 Release Preparation
-    - update README
-    - update roadmap
-    - update version history
-    - update semantic version
-    - prepare release changelog
 
 # -------------------------------------------------
 # PHASE 10 — STABLE RELEASE PREPARATION

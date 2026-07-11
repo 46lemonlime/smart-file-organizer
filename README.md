@@ -1,26 +1,41 @@
-# Smart File Organizer (v0.8.0)
+# Smart File Organizer (v0.9.0)
 
 A Python CLI application for deterministic file organization built around a contract-first architecture.
 
 It automates file management workflows such as file sorting, dry-run simulation, and structured folder generation, with a focus on safety, configurability, and extensibility.
 
 ## 🚀 Quick Start
-**Standard execution**
+
+**Organize files**
+
 ```bash
 python3 main.py move ~/Downloads
 ```
+
 **Rollback latest execution**
+
 ```bash
 python3 main.py rollback
 ```
-**Dry-run (safe simulation)**
+
+**Safe simulation**
+
 ```bash
 python3 main.py move ~/Downloads --dry-run
 python3 main.py rollback --dry-run
 ```
-**View latest execution report**
+
+**Browse report history**
+
+```bash
+python3 main.py report list
+```
+
+**View a report**
+
 ```bash
 python3 main.py report
+python3 main.py report 3
 ```
 ---
 
@@ -36,7 +51,7 @@ It follows a config-driven and deterministic execution design:
 4. Builds a deterministic execution plan
 5. Executes or simulates file system operations
 6. Captures operation-level results
-7. Generates a structured execution and rollback reports
+7. Generates a structured report for every execution and rollback
 8. Supports deterministic rollback of the latest execution
 
 Execution and rollback reports preserve detailed discovery,
@@ -96,7 +111,11 @@ Mover
 - Reporting
    - automatic execution reports
    - JSON report persistence
-   - latest report inspection via CLI
+   - unified report history
+   - report selection by index
+   - report selection by identifier
+   - report cleanup
+   - application log cleanup
    - operation-level execution trace
    - discovery skipped-item reporting
    - planning skipped-operation reporting
@@ -164,6 +183,34 @@ Current shared contracts include:
 - PlanningReport
 - MoverReport
 - ExecutionReport
+
+### 📊 Reporting System
+
+The reporting subsystem provides complete execution traceability
+through persisted JSON reports.
+
+Reports are generated automatically after every move and rollback
+operation and can later be inspected through the CLI.
+
+The subsystem is organized into independent components, each with
+a single responsibility:
+
+| Component | Responsibility |
+|---|---|
+| generator.py | Build report contracts |
+| saver.py | Persist reports |
+| loader.py | Load persisted reports |
+| cleaner.py | Delete persisted reports and application logs |
+| reporter.py | Render reports through the CLI |
+
+#### Key capabilities
+- automatic report generation
+- execution and rollback reports
+- chronological report history
+- report selection by index
+- report selection by identifier
+- report cleanup
+- application log cleanup
 
 ### 🔎 Logging System (Observability Design)
 
@@ -236,6 +283,7 @@ smart-file-organizer/
 │       ├── generator.py
 │       ├── saver.py
 │       ├── loader.py
+│       ├── cleaner.py
 │       └── reporter.py
 │
 ├── core/
@@ -306,16 +354,14 @@ reporting/reporter.py
 #### report task
 
 ```md
-CLI Input
-   ↓
+CLI input
+ ↓
 parser.py
-   ↓
+ ↓
 main.py
-   ↓
-loader.py
-   ↓
-reporter.py
-   ↓
+ ↓
+Reporting subsystem
+ ↓
 CLI Output
 ```
 
@@ -380,10 +426,32 @@ python3 main.py rollback --dry-run
 
 #### Report
 
-Display the latest persisted execution report.
+Display the latest persisted report.
 
 ```bash
 python3 main.py report
+```
+
+Browse report history.
+
+```bash
+python3 main.py report list
+```
+
+Display a report by index or identifier.
+
+```bash
+python3 main.py report 3
+python3 main.py report 20260710T090146
+```
+
+Delete persisted reports.
+
+```bash
+python3 main.py report clear 3
+python3 main.py report clear executions
+python3 main.py report clear all
+python3 main.py report clear logs
 ```
 
 
@@ -543,7 +611,8 @@ v0.4.0 and v0.5.0 were internal iterations merged into adjacent releases for ver
 * [x] Execution traceability
 * [x] Observability improvements
 * [x] CLI & developer experience
-* [ ] Execution report history
+* [x] Report history
+* [x] Report cleanup
 
 #### Phase 10 - v1.0.0 Stable Release Preparation
 * [ ] Code cleanup
@@ -556,48 +625,31 @@ v0.4.0 and v0.5.0 were internal iterations merged into adjacent releases for ver
 ### 🚧 Current Limitations
 
 - Additional report renderers not yet implemented
-- Rollback currently restores only the latest execution report
-- Report history browsing is not yet available
-- Reports cannot yet be loaded by execution identifier
+- Rollback currently restores only the latest execution
 - No plugin-based classification system
 - No AI-assisted file classification
 - CLI only (no graphical interface)
+- Report history currently supports local JSON persistence only
 ---
 
 ## 7. 📜 Version History
 
-### v0.9.0 (in progress)
+### v0.9.0
 
 - Complete reporting subsystem
-- Report generation pipeline
-- Report persistence layer
-- Report loading layer
-- CLI report renderer
+- Execution and rollback reports
+- Automatic report generation and rendering
+- Report history with chronological browsing
+- Report loading by index or identifier
+- Report cleanup and log cleanup commands
+- Complete rollback subsystem
+- Rollback planning and execution
+- Rollback dry-run support
+- Rollback report persistence
+- Expanded execution traceability
+- Improved CLI experience
 - Configuration-driven report persistence
-- Reporting contracts
-- Separation of reporting responsibilities
-- Centralized event taxonomy
-- Improved observability consistency
-- Composition-root dependency injection
-- Dedicated CLI parser module
-- Argparse subcommands
-- Command-specific help output
-- Move/report command separation
-- Mover stage reporting
-- Operation-level execution results
-- Discovery skipped-item reporting
-- Planning skipped-operation reporting
-- Rollback-ready execution history
-- Rollback subsystem
-- Rollback planner
-- Rollback executor
-- Rollback coordinator
-- Rollback CLI command
-- Rollback reports
-- Rollback dry-run mode
-- Generic report persistence
-- Generic report loader
-- Automatic CLI report rendering
+- Improved observability and event taxonomy
 
 ### v0.8.0
 

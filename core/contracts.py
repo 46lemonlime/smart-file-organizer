@@ -1115,6 +1115,77 @@ class MoverReport:
                 )
 
 
+# REPORT HISTORY ITEM CONTRACT
+@dataclass
+class ReportHistoryItem:
+    """
+    Represents a summarized persisted report entry.
+
+    CONTRACT GUARANTEES:
+    - index is a non-negative integer
+    - report_id is a non-empty string
+    - report_type is a non-empty string
+    - path is a non-empty string
+    - dry_run is boolean
+    - totals are non-negative integers
+
+    IMPORTANT:
+    This contract contains report history metadata only.
+    It is designed for report listing and report selection.
+    """
+
+    index: int
+    report_id: str
+    report_type: str
+    path: str
+    dry_run: bool
+    total_processed: int
+    total_skipped: int
+    total_failed: int
+
+    def __post_init__(self):
+
+        _validate_non_negative_int(
+            self.index,
+            "index"
+        )
+
+        _validate_non_empty_string(
+            self.report_id,
+            "report_id"
+        )
+
+        _validate_non_empty_string(
+            self.report_type,
+            "report_type"
+        )
+
+        _validate_non_empty_string(
+            self.path,
+            "path"
+        )
+
+        _validate_bool_type(
+            self.dry_run,
+            "dry_run"
+        )
+
+        _validate_non_negative_int(
+            self.total_processed,
+            "total_processed"
+        )
+
+        _validate_non_negative_int(
+            self.total_skipped,
+            "total_skipped"
+        )
+
+        _validate_non_negative_int(
+            self.total_failed,
+            "total_failed"
+        )
+
+
 # EXECUTION REPORT CONTRACT
 @dataclass
 class ExecutionReport:

@@ -114,11 +114,13 @@ PLAN_BUILD_EMPTY = "plan_build_empty"
 
 PLAN_READY = "plan_ready"
 
+
 # -------------------------------------------------
 # EXECUTION PIPELINE - MOVE WORKFLOW EVENTS
 # -------------------------------------------------
 MOVE_START = "move_start"
 MOVE_COMPLETE = "move_complete"
+
 
 # -------------------------------------------------
 # EXECUTION PIPELINE - MOVE EXECUTION EVENTS
@@ -128,6 +130,7 @@ MOVE_SUMMARY = "move_summary"
 MOVE_SUMMARY_FAILED = "move_summary_failed"
 MOVE_FAILED = "move_failed"
 MOVE_SKIP = "move_skip"
+
 
 # -------------------------------------------------
 # EXECUTION PIPELINE - FILE EVENTS
@@ -162,6 +165,10 @@ REPORT_SAVE_FAILED = "report_save_failed"
 REPORT_LOAD_START = "report_load_start"
 REPORT_LOAD_COMPLETE = "report_load_complete"
 REPORT_LOAD_FAILED = "report_load_failed"
+
+REPORT_DELETE_START = "report_delete_start"
+REPORT_DELETED = "report_deleted"
+REPORT_DELETE_FAILED = "report_delete_failed"
 
 
 # -------------------------------------------------

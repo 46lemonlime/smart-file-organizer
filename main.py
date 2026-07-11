@@ -12,6 +12,9 @@ Responsibilities:
 - Route supported tasks
 - Coordinate high-level application flow
 - Inject runtime dependencies into subsystems
+- Route report history actions and references
+- Route individual and scoped report deletion requests
+- Route application log cleanup requests
 
 Architecture Role:
 This file intentionally contains NO logic related to:
@@ -22,7 +25,12 @@ This file intentionally contains NO logic related to:
 - execution planning
 - filesystem mutations
 - rollback implementation
-- reporting implementation
+- report persistence implementation
+- report reconstruction implementation
+- report rendering implementation
+- report history construction
+- report deletion implementation
+- log cleanup implementation
 
 Instead, it functions as the composition root responsible
 for wiring together the application's subsystems.
@@ -47,7 +55,8 @@ Subsystems:
 - rollback:
     Rollback workflow coordination
 - reporting:
-    Execution reporting
+    Report generation, persistence, loading, history,
+    cleanup, and presentation
 
 Design Principles:
 - minimal orchestration
@@ -60,6 +69,9 @@ Design Principles:
 Failure Contract:
 - validates execution context before routing
 - prevents invalid task execution
+- handles unavailable persisted reports safely
+- handles unavailable application logs safely
+- provides actionable CLI feedback
 - delegates subsystem failures to their owners
 
 Observability:
@@ -72,17 +84,28 @@ Structured logs are emitted throughout execution to provide:
 # -------------------------------------------------
 # IMPORTS
 # -------------------------------------------------
-# Import required libraries
-import os
-
 # Import modules from the project
 from tasks.execution.planner import build_execution_plan
 from tasks.discovery.coordinator import discover_files
 from tasks.execution.mover import move_files
-from tasks.reporting.loader import load_latest_execution_report
+
+from tasks.reporting.cleaner import (
+    clear_application_logs,
+    delete_report_by_reference,
+    delete_reports_by_scope
+)
+
+from tasks.reporting.loader import (
+    list_report_history,
+    load_latest_execution_report,
+    load_report_by_reference
+)
 
 from tasks.reporting.reporter import (
+    render_deleted_report,
+    render_deleted_reports,
     render_execution_report,
+    render_report_history,
     render_rollback_report
 )
 
@@ -101,6 +124,11 @@ from tasks.reporting.saver import save_report
 from utils.logger import log_info, log_error
 from utils.config_loader import get_config
 
+from core.contracts import (
+    ExecutionReport,
+    RollbackReport
+)
+
 from core.metadata import (
     APP_BANNER
 )
@@ -116,6 +144,14 @@ from core.events import (
     REPORT_START,
     REPORT_COMPLETE
 )
+
+
+# -------------------------------------------------
+# APPLICATION PERSISTENCE PATHS
+# -------------------------------------------------
+LOGS_DIRECTORY = "logs"
+LOG_FILENAME = "smartorg.log"
+
 
 # -------------------------------------------------
 # TASK HANDLERS
@@ -240,25 +276,338 @@ def handle_move(
 # -------------------------------------------------
 def handle_report(
     reports_directory: str,
-    execution_reports_directory: str
+    execution_reports_directory: str,
+    rollback_reports_directory: str,
+    logs_directory: str,
+    log_filename: str,
+    action: str | None,
+    reference: str | None
 ) -> None:
     """
-    Executes reporting presentation workflow.
+    Executes the reporting presentation and cleanup workflow.
+
+    Supported actions:
+    - no action:
+        load and render the latest execution report
+    - list:
+        render unified chronological report history
+    - numeric index:
+        load and render the selected history report
+    - report identifier:
+        load and render the matching persisted report
+    - clear <index>:
+        delete one report by history index
+    - clear <identifier>:
+        delete one report by report identifier
+    - clear executions:
+        delete all persisted execution reports
+    - clear rollbacks:
+        delete all persisted rollback reports
+    - clear all:
+        delete all persisted reports
+    - clear logs:
+        clear the persisted application log file
 
     IMPORTANT:
-    Reports are loaded from persisted execution report files.
-    This handler does NOT generate new reports.
+    This handler only routes reporting and cleanup workflows.
+    Report loading, reconstruction, history construction,
+    reference resolution, deletion, log cleanup, and rendering
+    remain delegated to their owning subsystems.
     """
 
-    log_info(REPORT_START)
+    log_info(
+        f"{REPORT_START} | "
+        f"action={action or 'latest'} "
+        f"reference={reference}"
+    )
 
     # -------------------------------------------------
-    # STEP 1: LOAD LATEST REPORT
+    # REPORT HISTORY
     # -------------------------------------------------
-    report = load_latest_execution_report(
-        reports_directory,
-        execution_reports_directory
-    )
+    if action == "list":
+
+        history_items = list_report_history(
+            reports_directory,
+            execution_reports_directory,
+            rollback_reports_directory
+        )
+
+        if not history_items:
+
+            print()
+            print("Reports")
+            print("-------")
+            print()
+            print("No reports found.")
+            print()
+
+            log_info(
+                f"{REPORT_SKIPPED} | "
+                "reason=no_persisted_reports "
+                "action=list"
+            )
+
+            return
+
+        render_report_history(
+            history_items
+        )
+
+        log_info(
+            f"{REPORT_COMPLETE} | "
+            f"action=list "
+            f"reports={len(history_items)}"
+        )
+
+        return
+
+    # -------------------------------------------------
+    # PERSISTENCE CLEANUP
+    # -------------------------------------------------
+    if action == "clear":
+
+        # -------------------------------------------------
+        # MISSING CLEANUP REFERENCE
+        # -------------------------------------------------
+        if reference is None:
+
+            print()
+            print("Missing report index, identifier, or scope.")
+            print()
+            print("Use:")
+            print()
+            print(
+                "    python3 main.py report clear "
+                "<index_or_identifier>"
+            )
+            print(
+                "    python3 main.py report clear "
+                "executions"
+            )
+            print(
+                "    python3 main.py report clear "
+                "rollbacks"
+            )
+            print(
+                "    python3 main.py report clear "
+                "all"
+            )
+            print(
+                "    python3 main.py report clear "
+                "logs"
+            )
+            print()
+            print("Available reports can be viewed with:")
+            print()
+            print("    python3 main.py report list")
+            print()
+
+            log_info(
+                f"{REPORT_SKIPPED} | "
+                "reason=missing_cleanup_reference "
+                "action=clear"
+            )
+
+            return
+
+        # -------------------------------------------------
+        # APPLICATION LOG CLEANUP
+        # -------------------------------------------------
+        if reference == "logs":
+
+            logs_cleared = clear_application_logs(
+                logs_directory,
+                log_filename
+            )
+
+            if not logs_cleared:
+
+                print()
+                print("Logs not found.")
+                print(
+                    "No persisted application log file "
+                    "is available."
+                )
+                print()
+
+                log_info(
+                    f"{REPORT_SKIPPED} | "
+                    "reason=log_file_not_found "
+                    "action=clear "
+                    "scope=logs"
+                )
+
+                return
+
+            print()
+            print("Cleared Logs")
+            print("------------")
+            print()
+            print(
+                f"File: {logs_directory}/{log_filename}"
+            )
+            print()
+
+            log_info(
+                f"{REPORT_COMPLETE} | "
+                "action=clear "
+                "scope=logs"
+            )
+
+            return
+
+        deletion_scopes = {
+            "executions",
+            "rollbacks",
+            "all"
+        }
+
+        # -------------------------------------------------
+        # SCOPED REPORT DELETION
+        # -------------------------------------------------
+        if reference in deletion_scopes:
+
+            deleted_items = delete_reports_by_scope(
+                reference,
+                reports_directory,
+                execution_reports_directory,
+                rollback_reports_directory
+            )
+
+            if not deleted_items:
+
+                print()
+                print("No reports deleted.")
+                print(
+                    f"No persisted reports matched "
+                    f"the '{reference}' scope."
+                )
+                print()
+
+                log_info(
+                    f"{REPORT_SKIPPED} | "
+                    f"reason=no_matching_reports "
+                    f"action=clear "
+                    f"scope={reference}"
+                )
+
+                return
+
+            render_deleted_reports(
+                deleted_items,
+                reference
+            )
+
+            log_info(
+                f"{REPORT_COMPLETE} | "
+                f"action=clear "
+                f"scope={reference} "
+                f"deleted={len(deleted_items)}"
+            )
+
+            return
+
+        # -------------------------------------------------
+        # INDIVIDUAL REPORT DELETION
+        # -------------------------------------------------
+        deleted_item = delete_report_by_reference(
+            reference,
+            reports_directory,
+            execution_reports_directory,
+            rollback_reports_directory
+        )
+
+        if deleted_item is None:
+
+            print()
+            print("Report not found.")
+            print("Invalid report index or identifier.")
+            print()
+            print("Use:")
+            print()
+            print("    python3 main.py report list")
+            print()
+            print("to view available reports.")
+            print()
+
+            log_info(
+                f"{REPORT_SKIPPED} | "
+                f"reason=report_delete_not_found "
+                f"reference={reference}"
+            )
+
+            return
+
+        render_deleted_report(
+            deleted_item
+        )
+
+        log_info(
+            f"{REPORT_COMPLETE} | "
+            f"action=clear "
+            f"report_id={deleted_item.report_id} "
+            f"report_type={deleted_item.report_type}"
+        )
+
+        return
+
+    # -------------------------------------------------
+    # UNEXPECTED SECOND ARGUMENT
+    # -------------------------------------------------
+    if reference is not None:
+
+        print()
+        print("Invalid report command.")
+        print()
+        print("Use:")
+        print()
+        print("    python3 main.py report")
+        print("    python3 main.py report list")
+        print("    python3 main.py report <index_or_identifier>")
+        print(
+            "    python3 main.py report clear "
+            "<index_or_identifier>"
+        )
+        print("    python3 main.py report clear executions")
+        print("    python3 main.py report clear rollbacks")
+        print("    python3 main.py report clear all")
+        print("    python3 main.py report clear logs")
+        print()
+
+        log_info(
+            f"{REPORT_SKIPPED} | "
+            f"reason=unexpected_report_reference "
+            f"action={action} "
+            f"reference={reference}"
+        )
+
+        return
+
+    # -------------------------------------------------
+    # LATEST EXECUTION REPORT
+    # -------------------------------------------------
+    if action is None:
+
+        report = load_latest_execution_report(
+            reports_directory,
+            execution_reports_directory
+        )
+
+        report_reference = "latest"
+
+    # -------------------------------------------------
+    # REPORT BY INDEX OR IDENTIFIER
+    # -------------------------------------------------
+    else:
+
+        report = load_report_by_reference(
+            action,
+            reports_directory,
+            execution_reports_directory,
+            rollback_reports_directory
+        )
+
+        report_reference = action
 
     # -------------------------------------------------
     # REPORT AVAILABILITY VALIDATION
@@ -267,21 +616,71 @@ def handle_report(
 
         log_info(
             f"{REPORT_SKIPPED} | "
-            "reason=no_persisted_reports"
+            f"reason=report_not_found "
+            f"reference={report_reference}"
         )
+
+        if action is not None:
+
+            print()
+            print("Report not found.")
+            print("Invalid report index or identifier.")
+            print()
+            print("Use:")
+            print()
+            print("    python3 main.py report list")
+            print()
+            print("to view available reports.")
+            print()
+
+        else:
+
+            print()
+            print("Report not found.")
+            print("No persisted execution reports are available.")
+            print()
 
         return
 
     # -------------------------------------------------
-    # STEP 2: RENDER LOADED REPORT
+    # REPORT TYPE ROUTING
     # -------------------------------------------------
-    render_execution_report(
-        report
-    )
+    if isinstance(
+        report,
+        ExecutionReport
+    ):
+
+        render_execution_report(
+            report
+        )
+
+        report_type = "execution"
+
+    elif isinstance(
+        report,
+        RollbackReport
+    ):
+
+        render_rollback_report(
+            report
+        )
+
+        report_type = "rollback"
+
+    else:
+
+        log_error(
+            f"{REPORT_SKIPPED} | "
+            "reason=unsupported_report_contract "
+            f"type={type(report).__name__}"
+        )
+
+        return
 
     log_info(
         f"{REPORT_COMPLETE} | "
-        f"path={report.path}"
+        f"type={report_type} "
+        f"reference={report_reference}"
     )
 
 
@@ -313,18 +712,12 @@ def handle_rollback(
 
         return
 
-    # -------------------------------------------------
-    # SAVE ROLLBACK REPORT
-    # -------------------------------------------------
     save_report(
         rollback_report,
         reports_directory,
         rollback_reports_directory
     )
 
-    # -------------------------------------------------
-    # RENDER ROLLBACK REPORT
-    # -------------------------------------------------
     render_rollback_report(
         rollback_report
     )
@@ -352,7 +745,11 @@ def main() -> None:
     # -------------------------------------------------
     config = get_config()
 
-    dry_run = getattr(args, "dry_run", False) or config.dry_run
+    dry_run = getattr(
+        args,
+        "dry_run",
+        False
+    ) or config.dry_run
 
     folder_prefix = config.folder_prefix
 
@@ -379,12 +776,30 @@ def main() -> None:
     # -------------------------------------------------
     task = args.task
 
-    path = getattr(args, "path", None)
+    path = getattr(
+        args,
+        "path",
+        None
+    )
+
+    report_action = getattr(
+        args,
+        "action",
+        None
+    )
+
+    report_reference = getattr(
+        args,
+        "reference",
+        None
+    )
 
     log_info(
         f"{EXECUTION_CONTEXT} | "
         f"task={task} "
         f"path={path} "
+        f"report_action={report_action} "
+        f"report_reference={report_reference} "
         f"dry_run={dry_run}"
     )
 
@@ -405,7 +820,12 @@ def main() -> None:
 
         handle_report(
             reports_directory,
-            execution_reports_directory
+            execution_reports_directory,
+            rollback_reports_directory,
+            LOGS_DIRECTORY,
+            LOG_FILENAME,
+            report_action,
+            report_reference
         )
 
     elif task == "rollback":

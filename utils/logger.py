@@ -74,15 +74,10 @@ import inspect
 import os
 import uuid
 
-
-# -------------------------------------------------
-# LOG CONFIGURATION
-# -------------------------------------------------
-# Folder where logs are stored
-LOG_DIR = "logs"
-
-# Full path to log file
-LOG_FILE = os.path.join(LOG_DIR, "smartorg.log")
+from core.paths import (
+    LOG_FILE_PATH,
+    LOGS_DIRECTORY,
+)
 
 # Session identifier for correlating logs
 SESSION_ID = str(uuid.uuid4())[:8]
@@ -91,7 +86,7 @@ SESSION_ID = str(uuid.uuid4())[:8]
 # -------------------------------------------------
 # INTERNAL: get caller module name
 # -------------------------------------------------
-def _get_caller_module():
+def _get_caller_module() -> str:
     """
     Returns normalized caller module name.
 
@@ -119,19 +114,21 @@ def _get_caller_module():
 # -------------------------------------------------
 # INTERNAL: ensure log directory exists
 # -------------------------------------------------
-def _ensure_log_directory():
+def _ensure_log_directory() -> None:
     """
     Ensures log directory exists before writing logs.
     """
 
-    if not os.path.exists(LOG_DIR):
-        os.makedirs(LOG_DIR)
+    os.makedirs(
+        LOGS_DIRECTORY,
+        exist_ok=True
+    )
 
 
 # -------------------------------------------------
 # INTERNAL: sanitize structured values
 # -------------------------------------------------
-def _sanitize_log_value(value):
+def _sanitize_log_value(value) -> str:
     """
     Prevents structured log corruption.
 
@@ -155,7 +152,10 @@ def _sanitize_log_value(value):
 # -------------------------------------------------
 # INTERNAL: write log entry
 # -------------------------------------------------
-def _write_log(level: str, message: str):
+def _write_log(
+        level: str,
+        message: str
+    ) -> None:
     """
     Writes formatted log entry into log file.
 
@@ -176,8 +176,8 @@ def _write_log(level: str, message: str):
 
         line = f"[{timestamp}][{SESSION_ID}][{level}][{module}] {message}\n"
 
-        with open(LOG_FILE, "a", encoding="utf-8") as f:
-            f.write(line)
+        with open(LOG_FILE_PATH, "a", encoding="utf-8") as file:
+            file.write(line)
 
     except Exception as e:
         # Final fallback protection
@@ -187,7 +187,7 @@ def _write_log(level: str, message: str):
 # -------------------------------------------------
 # PUBLIC: INFO log
 # -------------------------------------------------
-def log_info(message: str):
+def log_info(message: str) -> None:
     """
     General operational logging.
     """
@@ -198,7 +198,7 @@ def log_info(message: str):
 # -------------------------------------------------
 # PUBLIC: WARNING log
 # -------------------------------------------------
-def log_warning(message: str):
+def log_warning(message: str) -> None:
     """
     Recoverable or non-critical issues.
     """
@@ -209,7 +209,10 @@ def log_warning(message: str):
 # -------------------------------------------------
 # PUBLIC: ERROR log
 # -------------------------------------------------
-def log_error(message: str, error: Exception = None):
+def log_error(
+        message: str, 
+        error: Exception | None = None
+    ) -> None:
     """
     Failure and exception logging.
     """

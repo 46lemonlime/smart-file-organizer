@@ -3,18 +3,15 @@
 # -------------------------------------------------
 """
 This module serves as the application entry point and
-top-level orchestration layer.
+composition root.
 
 Responsibilities:
 - Consume parsed CLI arguments
 - Load application configuration
-- Validate execution context
-- Route supported tasks
-- Coordinate high-level application flow
-- Inject runtime dependencies into subsystems
-- Route report history actions and references
-- Route individual and scoped report deletion requests
-- Route application log cleanup requests
+- Build the runtime execution context
+- Inject application dependencies
+- Route supported commands to application handlers
+- Emit application startup and execution-context logs
 
 Architecture Role:
 This file intentionally contains NO logic related to:
@@ -25,24 +22,26 @@ This file intentionally contains NO logic related to:
 - execution planning
 - filesystem mutations
 - rollback implementation
-- report persistence implementation
-- report reconstruction implementation
-- report rendering implementation
+- report generation
+- report persistence
+- report reconstruction
+- report rendering
 - report history construction
-- report deletion implementation
-- log cleanup implementation
+- persistence cleanup
 
 Instead, it functions as the composition root responsible
-for wiring together the application's subsystems.
+for wiring together the application's handlers and subsystems.
 
 CLI parsing is delegated to cli/parser.py.
+Application workflows are delegated to handlers.py.
 
 Application Flow:
 CLI parsing
 → configuration loading
+→ runtime context construction
 → dependency injection
-→ execution context validation
-→ task routing
+→ command routing
+→ application handler
 → subsystem execution
 
 Subsystems:
@@ -56,7 +55,9 @@ Subsystems:
     Rollback workflow coordination
 - reporting:
     Report generation, persistence, loading, history,
-    cleanup, and presentation
+    and presentation
+- cleanup:
+    Report deletion and application log cleanup
 
 Design Principles:
 - minimal orchestration
@@ -65,30 +66,12 @@ Design Principles:
 - deterministic application flow
 - centralized dependency composition
 - explicit dependency injection
-
-Failure Contract:
-- validates execution context before routing
-- prevents invalid task execution
-- handles unavailable persisted reports safely
-- handles unavailable application logs safely
-- provides actionable CLI feedback
-- delegates subsystem failures to their owners
-
-Observability:
-Structured logs are emitted throughout execution to provide:
-- application lifecycle visibility
-- execution context diagnostics
-- task routing traceability
 """
 
 # -------------------------------------------------
 # IMPORTS
 # -------------------------------------------------
 # Import modules from the project
-from tasks.execution.planner import build_execution_plan
-from tasks.discovery.coordinator import discover_files
-from tasks.execution.mover import move_files
-
 from handlers import (
     handle_move,
     handle_report,
@@ -109,12 +92,11 @@ from core.events import (
     EXECUTION_CONTEXT,
 )
 
+from core.paths import (
+    LOG_FILENAME,
+    LOGS_DIRECTORY,
+)
 
-# -------------------------------------------------
-# APPLICATION PERSISTENCE PATHS
-# -------------------------------------------------
-LOGS_DIRECTORY = "logs"
-LOG_FILENAME = "smartorg.log"
 
 # -------------------------------------------------
 # MAIN

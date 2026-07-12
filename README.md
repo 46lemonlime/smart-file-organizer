@@ -209,7 +209,7 @@ artifacts.
 
 | Component | Responsibility |
 |---|---|
-| cleaner.py | Delete reports and clear application logs |
+| cleaner.py | Delete persisted reports and clear application logs |
 
 ### 📊 Reporting System
 
@@ -238,7 +238,7 @@ a single responsibility:
 - report cleanup
 - application log cleanup
 
-### 🔎 Logging System (Observability Design)
+### 🔎 Logging System
 
 The project uses a structured logging system across all modules.
 
@@ -246,24 +246,28 @@ The project uses a structured logging system across all modules.
 module_action | key=value [key=value ...]
 ```
 
-- Design guarantees:
-   - consistent debugging across the full pipeline
-   - machine-readable logs for filtering and analysis
-   - consistent operational traceability
-   - scalable observability for future system expansion
-   - consistent failure diagnostics across modules
-   - clean separation of concerns between scanning, planning, and execution layers
+Static logging paths and filenames are centrally managed by
+`core/paths.py`, allowing the logging infrastructure to operate
+independently from runtime configuration loading.
 
-
+**Design guarantees:**
+- consistent debugging across the full pipeline
+- machine-readable logs for filtering and analysis
+- consistent operational traceability
+- centralized logging path ownership
+- scalable observability for future system expansion
+- consistent failure diagnostics across modules
+- clean separation of concerns between scanning, planning, and execution layers
 
 #### Field Naming Consistency
+
 | Field | Meaning |
 |---|---|
-|path	| Generic filesystem path|
-|source_path | Original file location|
-|destination_path | Target file location|
-|file	| Filename only|
-|reason	| Machine-readable failure reason|
+| path | Generic filesystem path |
+| source_path | Original file location |
+| destination_path | Target file location |
+| file | Filename only |
+| reason | Machine-readable failure reason |
 
 **Avoid inconsistent aliases such as:**
 - src
@@ -318,6 +322,7 @@ smart-file-organizer/
 ├── core/
 │   ├── events.py
 │   ├── metadata.py
+│   ├── paths.py
 │   └── contracts/
 │        ├── validation.py
 │        ├── configuration.py
@@ -340,64 +345,86 @@ smart-file-organizer/
 
 ```md
 CLI Input
-   ↓
-parser.py
-   ↓
+    │
+    ▼
+cli/parser.py
+    │
+    ▼
 main.py
-   ↓
-discovery/coordinator.py
-   │
-   ├── discovery/scanner.py
-   ├── discovery/filter.py
-   └── discovery/classifier.py
-   ↓
-execution/planner.py
-   ↓
-execution/mover.py
-   ↓
-Filesystem execution / Dry-run simulation
-   ↓
-reporting/generator.py
-   ↓
-reporting/saver.py
-   ↓
-ExecutionReport (.json)
+    │
+    ▼
+handlers.py
+    │
+    ▼
+tasks/discovery/
+    │
+    ▼
+tasks/execution/
+    │
+    ▼
+tasks/reporting/
 ```
 #### rollback task
 ```
 CLI Input
-   ↓
-parser.py
-   ↓
+    │
+    ▼
+cli/parser.py
+    │
+    ▼
 main.py
-   ↓
-rollback/coordinator.py
-   │
-   ├── reporting/loader.py
-   ├── rollback/planner.py
-   └── rollback/executor.py
-   ↓
-Filesystem rollback / Dry-run simulation
-   ↓
-reporting/saver.py
-   ↓
-RollbackReport (.json)
-   ↓
-reporting/reporter.py
+    │
+    ▼
+handlers.py
+    │
+    ▼
+tasks/rollback/
+    │
+    ▼
+tasks/reporting/
 ```
 
 #### report task
 
 ```md
-CLI input
- ↓
-parser.py
- ↓
+CLI Input
+    │
+    ▼
+cli/parser.py
+    │
+    ▼
 main.py
- ↓
-Reporting subsystem
- ↓
-CLI Output
+    │
+    ▼
+handlers.py
+    │
+    ▼
+tasks/reporting/
+    │
+    ├── load report history
+    ├── resolve report reference
+    └── render CLI output
+```
+
+#### Cleanup task
+```
+CLI Input
+    │
+    ▼
+cli/parser.py
+    │
+    ▼
+main.py
+    │
+    ▼
+handlers.py
+    │
+    ▼
+tasks/cleanup/
+    │
+    ├── delete report by reference
+    ├── delete reports by scope
+    └── clear application logs
 ```
 
 ---
@@ -668,6 +695,18 @@ v0.4.0 and v0.5.0 were internal iterations merged into adjacent releases for ver
 ---
 
 ## 7. 📜 Version History
+
+### v1.0.0 (in progress)
+
+- Ongoing architecture review and responsibility audit
+- Composition Root fully consolidated in `main.py`
+- Application handlers extracted from the entry point
+- Dedicated cleanup subsystem introduced
+- Modular contract package with stable public API
+- Centralized contract validation utilities
+- Centralized application path constants
+- Improved dependency ownership and module cohesion
+- Documentation synchronized with architectural refactors
 
 ### v0.9.0
 

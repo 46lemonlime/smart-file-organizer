@@ -11,6 +11,10 @@ Implemented:
     - reviewed reporting loader architecture
       (no refactor required)
     - modularized core contracts package
+    - centralized static logging paths in core/paths.py
+    - removed duplicated logging path constants
+    - removed obsolete subsystem imports from main.py
+    - synchronized main composition-root documentation
 
 Planned:
 

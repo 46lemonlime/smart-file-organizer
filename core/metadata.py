@@ -55,7 +55,7 @@ This module may later include:
 APP_NAME = "Smart File Organizer"
 
 # Semantic Versioning (SemVer)
-VERSION = "0.8.0"
+VERSION = "0.9.0"
 
 # Prefixed semantic version label
 VERSION_LABEL = f"v{VERSION}"
@@ -68,4 +68,8 @@ APP_BANNER = f"{APP_NAME} {VERSION_LABEL}"
 # -------------------------------------------------
 # SUPPORTED TASKS 
 # ------------------------------------------------- 
-SUPPORTED_TASKS = { "move", "report" }
+SUPPORTED_TASKS = { 
+    "move", 
+    "report", 
+    "rollback" 
+}

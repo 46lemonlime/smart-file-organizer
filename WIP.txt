@@ -1,74 +1,21 @@
 # -------------------------------------------------
-# PHASE 9 — OPERATIONAL MATURITY
-# -------------------------------------------------
-
-Implemented (FINAL COMMIT SUMMARY):
-
-[x] Reporting Subsystem
-    - introduced reporting contracts
-    - implemented report generation pipeline
-    - implemented report persistence layer
-    - implemented report loading layer
-    - implemented CLI report presentation
-    - automatic report generation after every execution
-    - automatic report generation after rollback
-    - deterministic JSON report persistence
-    - report rendering separated from report generation
-    - composition-root integration
-
-[x] Rollback Subsystem
-    - introduced rollback contracts
-    - implemented rollback planner
-    - implemented rollback executor
-    - implemented rollback coordinator
-    - added rollback dry-run mode
-    - added rollback execution mode
-    - added rollback CLI command
-    - persisted rollback reports
-    - rendered rollback reports through CLI
-
-[x] Report History
-    - unified report history
-    - chronological report ordering
-    - report selection by history index
-    - report selection by report identifier
-    - latest report loading
-    - execution report loading
-    - rollback report loading
-    - report history CLI command
-
-[x] Report Cleanup
-    - delete report by history index
-    - delete report by report identifier
-    - clear execution reports
-    - clear rollback reports
-    - clear all persisted reports
-    - clear application logs
-
-[x] Report Persistence Improvements
-    - generalized report saver
-    - generalized report loader
-    - generalized report cleaner
-    - added rollback report directory configuration
-    - separated execution reports and rollback reports
-
-[x] Execution Traceability
-    - introduced DiscoveryResult contract
-    - introduced ExecutionResult contract
-    - added discovery skipped-item tracing
-    - added planning skipped-operation tracing
-    - renamed execution stage to mover
-    - introduced MoverReport contract
-    - expanded execution reports for rollback support
-
-# -------------------------------------------------
 # PHASE 10 — STABLE RELEASE PREPARATION
 # -------------------------------------------------
+
+Implemented:
+
+[x] Architecture Review
+    - extracted application handlers from main.py
+    - introduced cleanup subsystem
+    - simplified report command architecture
+    - reviewed reporting loader architecture
+      (no refactor required)
+    - modularized core contracts package
 
 Planned:
 
 [ ] Architecture Review
-    - audit module responsibilities
+    - audit remaining module responsibilities
     - remove remaining technical debt
     - perform final architectural refactors where necessary
 

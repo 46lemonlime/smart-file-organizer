@@ -1,20 +1,15 @@
 # -------------------------------------------------
-# REPORT CLEANER
+# PERSISTENCE CLEANER
 # -------------------------------------------------
 """
-Smart File Organizer - Persistence Cleaner
+Smart File Organizer - Persistence Cleanup Subsystem
 
-This module deletes persisted application reports
-and clears persisted application logs.
+This module deletes application-generated persistence artifacts.
 
 Responsibilities:
-- Resolve persisted reports by history index or identifier
 - Delete individual persisted reports
-- Delete reports by report type
-- Delete the complete persisted report history
-- Clear the application log file
-- Validate persisted artifact availability
-- Return metadata about deleted reports
+- Delete persisted reports by scope
+- Clear application logs
 - Preserve cleanup observability
 
 Architecture Role:

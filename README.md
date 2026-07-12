@@ -139,50 +139,77 @@ Mover
 
 ### 🧩 Contracts System
 
-The project uses centralized typed contracts located under:
+The project uses a centralized contracts package located under:
 
-(`core/contracts.py`)
+(`core/contracts/`)
 
-These contracts define the stable interfaces exchanged between
-all major subsystems.
+The package provides a stable contract-first architecture through
+a unified public API while internally organizing contracts by
+functional domain.
 
-Each pipeline stage owns its own contracts, allowing data to
-flow through the application without relying on dynamic
-dictionaries or loosely defined structures.
+Application modules should normally import contracts directly from:
 
-This establishes a contract-first architecture that minimizes
-runtime validation across the pipeline.
+```python
+from core.contracts import ...
+```
 
-These contracts:
+This keeps the import surface stable while allowing the internal
+organization of the contracts package to evolve independently.
 
-- reduce dynamic dictionary usage
-- improve pipeline consistency
-- strengthen type safety
-- centralize schema ownership
+The contracts package is organized into the following domains:
 
-Current shared contracts include:
+- **configuration**
+    - AppConfig
+    - CategoryConfig
 
-**Configuration**
-- AppConfig
-- CategoryConfig
+- **inventory**
+    - DiscoveredItem
+    - RawDiscoveryDataset
+    - ClassifiedDiscovery
+    - DiscoverySkippedItem
+    - DiscoveryResult
 
-**Discovery**
-- DiscoveredItem
-- ClassifiedDiscovery
-- DiscoveryResult
+- **operations**
+    - ExecutionOperation
+    - SkippedOperation
+    - ExecutionPlan
+    - ExecutionResult
 
-**Execution**
-- ExecutionOperation
-- SkippedOperation
-- ExecutionPlan
-- ExecutionResult
+- **recovery**
+    - RollbackOperation
+    - RollbackPlan
+    - RollbackResult
 
-**Reporting**
-- CategoryReport
-- DiscoveryReport
-- PlanningReport
-- MoverReport
-- ExecutionReport
+- **records**
+    - CategoryReport
+    - DiscoveryReport
+    - PlanningReport
+    - MoverReport
+    - ExecutionReport
+    - RollbackReport
+    - ReportHistoryItem
+
+Shared validation helpers are provided by:
+
+- **validation**
+    - reusable contract validation utilities
+
+This architecture:
+
+- centralizes schema ownership
+- reduces dynamic dictionary usage
+- improves pipeline consistency
+- strengthens type safety
+- separates contract domains without exposing internal organization
+
+### 🧹 Cleanup System
+
+The cleanup subsystem manages application-generated persistence
+artifacts.
+
+| Component | Responsibility |
+|---|---|
+| cleaner.py | Delete reports and clear application logs |
 
 ### 📊 Reporting System
 
@@ -200,7 +227,6 @@ a single responsibility:
 | generator.py | Build report contracts |
 | saver.py | Persist reports |
 | loader.py | Load persisted reports |
-| cleaner.py | Delete persisted reports and application logs |
 | reporter.py | Render reports through the CLI |
 
 #### Key capabilities
@@ -279,6 +305,9 @@ smart-file-organizer/
 │   │   ├── executor.py
 │   │   └── coordinator.py
 │   │
+│   ├── reporting/
+│   │   └── cleaner.py
+│   │
 │   └── reporting/
 │       ├── generator.py
 │       ├── saver.py
@@ -288,8 +317,14 @@ smart-file-organizer/
 │
 ├── core/
 │   ├── events.py
-│   ├── contracts.py
-│   └── metadata.py
+│   ├── metadata.py
+│   └── contracts/
+│        ├── validation.py
+│        ├── configuration.py
+│        ├── inventory.py
+│        ├── operations.py
+│        ├── recovery.py
+│        └── records.py
 │
 ├── utils/
 │   ├── logger.py

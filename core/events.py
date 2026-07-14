@@ -33,18 +33,20 @@ DESIGN PRINCIPLES:
 - centralized semantic ownership
 - stable observability contracts
 - low coupling across modules
-- pipeline-oriented organization
+- subsystem-oriented organization
 - machine-readable consistency
 
 EVENT ORGANIZATION:
-Events are grouped following the application's execution flow:
+Events are grouped following the application's architecture:
 
 application lifecycle
 → configuration
-→ execution context
-→ discovery pipeline
-→ execution pipeline
-→ reporting pipeline
+→ CLI and execution context
+→ discovery
+→ execution
+→ rollback
+→ reporting
+→ cleanup
 → validation
 
 This organization mirrors the system architecture,
@@ -52,8 +54,10 @@ making event definitions easier to navigate as the
 project evolves.
 
 EXAMPLE:
-EVENT_MOVE_COMPLETED = "move_completed"
-EVENT_PLAN_FAILED = "plan_failed"
+MOVE_COMPLETE = "move_complete"
+ROLLBACK_COMPLETE = "rollback_complete"
+REPORT_LOAD_FAILED = "report_load_failed"
+CLEANUP_COMPLETE = "cleanup_complete"
 """
 
 # -------------------------------------------------
@@ -148,6 +152,14 @@ FOLDER_CREATE_SIMULATION = "folder_create_simulation"
 
 
 # -------------------------------------------------
+# ROLLBACK WORKFLOW EVENTS
+# -------------------------------------------------
+ROLLBACK_START = "rollback_start"
+ROLLBACK_COMPLETE = "rollback_complete"
+ROLLBACK_SKIPPED = "rollback_skipped"
+
+
+# -------------------------------------------------
 # REPORTING PIPELINE - WORKFLOW EVENTS
 # -------------------------------------------------
 REPORT_START = "report_start"
@@ -169,6 +181,14 @@ REPORT_LOAD_FAILED = "report_load_failed"
 REPORT_DELETE_START = "report_delete_start"
 REPORT_DELETED = "report_deleted"
 REPORT_DELETE_FAILED = "report_delete_failed"
+
+
+# -------------------------------------------------
+# CLEANUP WORKFLOW EVENTS
+# -------------------------------------------------
+CLEANUP_START = "cleanup_start"
+CLEANUP_COMPLETE = "cleanup_complete"
+CLEANUP_SKIPPED = "cleanup_skipped"
 
 
 # -------------------------------------------------

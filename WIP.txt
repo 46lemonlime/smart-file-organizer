@@ -6,29 +6,38 @@ Implemented:
 
 [x] Architecture Review
     - extracted application handlers from main.py
+    - segregated application handlers into dedicated workflow modules
+    - introduced standalone cleanup command
     - introduced cleanup subsystem
     - simplified report command architecture
     - reviewed reporting loader architecture
       (no refactor required)
     - modularized core contracts package
     - centralized static logging paths in core/paths.py
+    - centralized workflow event taxonomy
     - removed duplicated logging path constants
     - removed obsolete subsystem imports from main.py
+    - removed obsolete handler implementation
+    - removed obsolete metadata registry
     - synchronized main composition-root documentation
 
 Planned:
 
 [ ] Architecture Review
-    - audit remaining module responsibilities
+    - review remaining high-responsibility modules
+    - finalize architecture audit
     - remove remaining technical debt
-    - perform final architectural refactors where necessary
+
+[ ] CLI Improvements
+    - add scoped report history filtering
+    - review CLI consistency
+    - improve command ergonomics
 
 [ ] Code Quality
-    - code cleanup
-    - improve cohesion and consistency
     - remove obsolete code
     - normalize naming
-    - review comments and docstrings
+    - improve comments and docstrings
+    - improve module cohesion where appropriate
 
 [ ] Performance & Memory
     - optimize filesystem operations
@@ -44,10 +53,10 @@ Planned:
     - bug fixing
 
 [ ] Documentation
-    - final README review
-    - synchronize documentation with implementation
-    - improve architecture documentation
-    - review usage examples
+    - synchronize README with implementation
+    - finalize architecture documentation
+    - review command examples
+    - review project structure
 
 [ ] v1.0.0 Stable Release
     - final semantic version update

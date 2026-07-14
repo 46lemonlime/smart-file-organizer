@@ -71,26 +71,24 @@ Design Principles:
 # -------------------------------------------------
 # IMPORTS
 # -------------------------------------------------
-# Import modules from the project
 from handlers import (
+    handle_cleanup,
     handle_move,
     handle_report,
-    handle_rollback
+    handle_rollback,
 )
 
 from cli.parser import parse_args
 
-from utils.logger import log_info
 from utils.config_loader import get_config
-
-from core.metadata import (
-    APP_BANNER
-)
+from utils.logger import log_info
 
 from core.events import (
     APP_START,
     EXECUTION_CONTEXT,
 )
+
+from core.metadata import APP_BANNER
 
 from core.paths import (
     LOG_FILENAME,
@@ -150,15 +148,21 @@ def main() -> None:
         None
     )
 
-    report_action = getattr(
-        args,
-        "action",
-        None
-    )
-
     report_reference = getattr(
         args,
         "reference",
+        None
+    )
+
+    cleanup_resource = getattr(
+        args,
+        "cleanup_resource",
+        None
+    )
+
+    cleanup_target = getattr(
+        args,
+        "cleanup_target",
         None
     )
 
@@ -166,8 +170,9 @@ def main() -> None:
         f"{EXECUTION_CONTEXT} | "
         f"task={task} "
         f"path={path} "
-        f"report_action={report_action} "
         f"report_reference={report_reference} "
+        f"cleanup_resource={cleanup_resource} "
+        f"cleanup_target={cleanup_target} "
         f"dry_run={dry_run}"
     )
 
@@ -190,9 +195,6 @@ def main() -> None:
             reports_directory,
             execution_reports_directory,
             rollback_reports_directory,
-            LOGS_DIRECTORY,
-            LOG_FILENAME,
-            report_action,
             report_reference
         )
 
@@ -203,6 +205,18 @@ def main() -> None:
             execution_reports_directory,
             rollback_reports_directory,
             dry_run
+        )
+
+    elif task == "cleanup":
+
+        handle_cleanup(
+            reports_directory,
+            execution_reports_directory,
+            rollback_reports_directory,
+            LOGS_DIRECTORY,
+            LOG_FILENAME,
+            cleanup_resource,
+            cleanup_target
         )
 
 

@@ -11,7 +11,7 @@ Responsibilities:
 - Validate CLI syntax
 - Return parsed execution arguments
 - Parse report history actions and references
-- Parse report deletion requests
+- Parse cleanup resources and report cleanup targets
 
 Architecture Role:
 This module intentionally contains NO logic related to:
@@ -23,6 +23,7 @@ This module intentionally contains NO logic related to:
 - report loading
 - report history resolution
 - report deletion
+- log cleanup
 - reporting
 - task routing
 
@@ -40,18 +41,26 @@ Supported Commands:
 - move
 - report
 - rollback
+- cleanup
 
 Report Actions:
 - no action:
-    display the latest execution report
+    display the latest persisted report
 - list:
     display unified report history
 - numeric index:
     select a report from the history list
 - report identifier:
     select a report by its timestamp-based identifier
-- clear <reference>:
-    request deletion of a report by index or identifier
+
+Cleanup Resources:
+- report <target>:
+    delete a report by index or identifier, or delete reports
+    using a supported scope
+- log:
+    clear the application log
+- all:
+    clear all persisted reports and application logs
 
 Design Principles:
 - CLI-only responsibility
@@ -63,8 +72,13 @@ Design Principles:
 
 IMPORTANT:
 This module only parses command-line arguments.
-It does NOT execute application logic, resolve report references,
-or delete persisted reports.
+
+It does NOT:
+- execute application logic
+- resolve report references
+- determine report cleanup scope
+- delete persisted reports
+- clear application logs
 """
 
 # -------------------------------------------------
@@ -124,20 +138,7 @@ def parse_args() -> argparse.Namespace:
     # -------------------------------------------------
     report_parser = subparsers.add_parser(
         "report",
-        help=(
-            "Display, list, or delete persisted reports."
-        )
-    )
-
-    report_parser.add_argument(
-        "action",
-        nargs="?",
-        default=None,
-        help=(
-            "Use 'list', 'clear', a history index, or a "
-            "report identifier. Defaults to the latest "
-            "execution report."
-        )
+        help="Display persisted reports and report history."
     )
 
     report_parser.add_argument(
@@ -145,8 +146,9 @@ def parse_args() -> argparse.Namespace:
         nargs="?",
         default=None,
         help=(
-            "Report history index or identifier used with "
-            "the 'clear' action."
+            "Use 'list', a history index, or a report "
+            "identifier. Defaults to the latest persisted "
+            "report."
         )
     )
 
@@ -162,6 +164,53 @@ def parse_args() -> argparse.Namespace:
         "--dry-run",
         action="store_true",
         help="Simulate rollback operations."
+    )
+
+    # -------------------------------------------------
+    # CLEANUP COMMAND
+    # -------------------------------------------------
+    cleanup_parser = subparsers.add_parser(
+        "cleanup",
+        help="Delete application-generated persistence artifacts."
+    )
+
+    cleanup_subparsers = cleanup_parser.add_subparsers(
+        dest="cleanup_resource",
+        required=True,
+        metavar="resource"
+    )
+
+    # -------------------------------------------------
+    # CLEANUP REPORT
+    # -------------------------------------------------
+    cleanup_report_parser = cleanup_subparsers.add_parser(
+        "report",
+        help="Delete persisted reports."
+    )
+
+    cleanup_report_parser.add_argument(
+        "cleanup_target",
+        type=str,
+        help=(
+            "Report history index, report identifier, or scope: "
+            "'executions', 'rollbacks', or 'all'."
+        )
+    )
+
+    # -------------------------------------------------
+    # CLEANUP LOG
+    # -------------------------------------------------
+    cleanup_subparsers.add_parser(
+        "log",
+        help="Clear the application log."
+    )
+
+    # -------------------------------------------------
+    # CLEANUP ALL
+    # -------------------------------------------------
+    cleanup_subparsers.add_parser(
+        "all",
+        help="Delete all persisted reports and clear application logs."
     )
 
     return parser.parse_args()

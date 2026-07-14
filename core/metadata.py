@@ -64,12 +64,3 @@ APP_DESCRIPTION = ("Deterministic filesystem organization CLI")
 
 # Full application banner
 APP_BANNER = f"{APP_NAME} {VERSION_LABEL}"
-
-# -------------------------------------------------
-# SUPPORTED TASKS 
-# ------------------------------------------------- 
-SUPPORTED_TASKS = { 
-    "move", 
-    "report", 
-    "rollback" 
-}

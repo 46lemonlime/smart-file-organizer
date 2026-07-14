@@ -86,6 +86,7 @@ Mover
    - move
    - rollback
    - report
+   - cleanup
 
 - Config-driven behavior
    - YAML-based configuration
@@ -211,6 +212,13 @@ artifacts.
 |---|---|
 | cleaner.py | Delete persisted reports and clear application logs |
 
+#### Key capabilities
+- report deletion by index
+- report deletion by identifier
+- scoped report cleanup
+- application log cleanup
+- complete persistence cleanup
+
 ### 📊 Reporting System
 
 The reporting subsystem provides complete execution traceability
@@ -235,8 +243,6 @@ a single responsibility:
 - chronological report history
 - report selection by index
 - report selection by identifier
-- report cleanup
-- application log cleanup
 
 ### 🔎 Logging System
 
@@ -282,16 +288,31 @@ smart-file-organizer/
 │
 ├── main.py
 ├── config.yaml
+├── logs/smartlog.log
 │
-├── logs/
-│   └── smartorg.log
+├── cli/parser.py
 │
 ├── reports/
 │   ├── executions/
 │   └── rollbacks/
 │
-├── cli/
-│   └── parser.py
+├── core/
+│   ├── events.py
+│   ├── metadata.py
+│   ├── paths.py
+│   └── contracts/
+│        ├── validation.py
+│        ├── configuration.py
+│        ├── inventory.py
+│        ├── operations.py
+│        ├── recovery.py
+│        └── records.py
+│
+├── handlers/
+│   ├── cleanup.py
+│   ├── move.py
+│   ├── report.py
+│   └── rollback.py
 │
 ├── tasks/
 │   ├── discovery/
@@ -309,27 +330,15 @@ smart-file-organizer/
 │   │   ├── executor.py
 │   │   └── coordinator.py
 │   │
-│   ├── reporting/
+│   ├── cleanup/
 │   │   └── cleaner.py
 │   │
 │   └── reporting/
 │       ├── generator.py
 │       ├── saver.py
 │       ├── loader.py
-│       ├── cleaner.py
 │       └── reporter.py
 │
-├── core/
-│   ├── events.py
-│   ├── metadata.py
-│   ├── paths.py
-│   └── contracts/
-│        ├── validation.py
-│        ├── configuration.py
-│        ├── inventory.py
-│        ├── operations.py
-│        ├── recovery.py
-│        └── records.py
 │
 ├── utils/
 │   ├── logger.py
@@ -338,6 +347,26 @@ smart-file-organizer/
 ├── README.md
 └── requirements.txt
 ```
+### 🏛️ Application Architecture
+```
+CLI
+    ↓
+Application Handlers
+    ↓
+Task Subsystems
+    ↓
+Core Contracts & Infrastructure
+```
+
+The application is organized into distinct architectural layers.
+
+- cli/ defines and validates the command-line interface.
+- handlers/ coordinate application workflows.
+- tasks/ implement specialized subsystem behavior.
+- core/ centralizes shared contracts, events, metadata and application paths.
+- utils/ provides reusable infrastructure services.
+
+This layered architecture keeps orchestration independent from subsystem implementation while maintaining clear ownership boundaries.
 
 ### 🔄 Data Flow
 
@@ -353,7 +382,7 @@ cli/parser.py
 main.py
     │
     ▼
-handlers.py
+handlers/
     │
     ▼
 tasks/discovery/
@@ -375,7 +404,7 @@ cli/parser.py
 main.py
     │
     ▼
-handlers.py
+handlers/
     │
     ▼
 tasks/rollback/
@@ -396,7 +425,7 @@ cli/parser.py
 main.py
     │
     ▼
-handlers.py
+handlers/
     │
     ▼
 tasks/reporting/
@@ -454,8 +483,7 @@ Example:
 python3 main.py move ~/Downloads
 ```
 
-
-#### Move (Dry-run)
+**Move (Dry-run)**
 
 Simulate the organization process without modifying the filesystem.
 
@@ -469,7 +497,6 @@ Example:
 python3 main.py move ~/Downloads --dry-run
 ```
 
-
 #### Rollback
 
 Restore the latest execution using the most recent execution report.
@@ -478,7 +505,7 @@ Restore the latest execution using the most recent execution report.
 python3 main.py rollback
 ```
 
-#### Rollback (Dry-run)
+**Rollback (Dry-run)**
 
 Simulate the rollback without modifying the filesystem.
 
@@ -488,34 +515,53 @@ python3 main.py rollback --dry-run
 
 #### Report
 
-Display the latest persisted report.
+Display the latest persisted execution report.
 
 ```bash
 python3 main.py report
 ```
 
-Browse report history.
+Browse the unified report history.
 
 ```bash
 python3 main.py report list
 ```
 
-Display a report by index or identifier.
+Display a persisted report by history index or identifier.
 
 ```bash
 python3 main.py report 3
 python3 main.py report 20260710T090146
 ```
 
-Delete persisted reports.
+#### Cleanup
+
+Delete persisted reports by history index or identifier.
 
 ```bash
-python3 main.py report clear 3
-python3 main.py report clear executions
-python3 main.py report clear all
-python3 main.py report clear logs
+python3 main.py cleanup report 3
+python3 main.py cleanup report 20260710T090146
 ```
 
+Delete groups of persisted reports.
+
+```bash
+python3 main.py cleanup report executions
+python3 main.py cleanup report rollbacks
+python3 main.py cleanup report all
+```
+
+Clear the application log.
+
+```bash
+python3 main.py cleanup log
+```
+
+Remove all persisted reports and application logs.
+
+```bash
+python3 main.py cleanup all
+```
 
 ### ⚠️ macOS Permissions
 
@@ -677,12 +723,17 @@ v0.4.0 and v0.5.0 were internal iterations merged into adjacent releases for ver
 * [x] Report cleanup
 
 #### Phase 10 - v1.0.0 Stable Release Preparation
-* [ ] Code cleanup
-* [ ] Architecture review and responsibility audit
-* [ ] Performance and memory optimization
-* [ ] Style cohesion and consistency
-* [ ] Testing and stabilization
-* [ ] Documentation review and synchronization
+
+* [x] Architecture review
+* [x] Cleanup command architecture
+* [x] Handler modularization
+* [x] Contract package modularization
+* [x] Core path centralization
+* [ ] Final code cleanup
+* [ ] CLI refinements
+* [ ] Performance optimization
+* [ ] Testing & stabilization
+* [ ] Final documentation review
 
 ### 🚧 Current Limitations
 
@@ -700,12 +751,15 @@ v0.4.0 and v0.5.0 were internal iterations merged into adjacent releases for ver
 
 - Ongoing architecture review and responsibility audit
 - Composition Root fully consolidated in `main.py`
-- Application handlers extracted from the entry point
-- Dedicated cleanup subsystem introduced
-- Modular contract package with stable public API
+- Application handlers segregated into dedicated workflow modules
+- Standalone cleanup command introduced
+- Dedicated cleanup workflow
+- Modular contracts package with stable public API
 - Centralized contract validation utilities
 - Centralized application path constants
+- Centralized workflow event taxonomy
 - Improved dependency ownership and module cohesion
+- Improved application layer architecture
 - Documentation synchronized with architectural refactors
 
 ### v0.9.0
@@ -801,6 +855,7 @@ v0.4.0 and v0.5.0 were internal iterations merged into adjacent releases for ver
 
 
 Designed and developed by **46lemonlime**
-GitHub: https://github.com/46lemonlime
+GitHub: [46lemonlime](https://github.com/46lemonlime)
 
-Built as a portfolio project focused on software architecture, maintainability and safe automation.
+Built as a portfolio project focused on software architecture, 
+maintainability and safe automation.

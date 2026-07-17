@@ -10,7 +10,7 @@ Responsibilities:
 - Parse command-line arguments
 - Validate CLI syntax
 - Return parsed execution arguments
-- Parse report history actions and references
+- Parse report history actions, references, and scopes
 - Parse cleanup resources and report cleanup targets
 
 Architecture Role:
@@ -22,6 +22,7 @@ This module intentionally contains NO logic related to:
 - rollback execution
 - report loading
 - report history resolution
+- report history filtering
 - report deletion
 - log cleanup
 - reporting
@@ -45,9 +46,13 @@ Supported Commands:
 
 Report Actions:
 - no action:
-    display the latest persisted report
+    display the latest persisted execution report
 - list:
     display unified report history
+- list executions:
+    display execution report history
+- list rollbacks:
+    display rollback report history
 - numeric index:
     select a report from the history list
 - report identifier:
@@ -76,6 +81,7 @@ This module only parses command-line arguments.
 It does NOT:
 - execute application logic
 - resolve report references
+- filter report history
 - determine report cleanup scope
 - delete persisted reports
 - clear application logs
@@ -148,7 +154,17 @@ def parse_args() -> argparse.Namespace:
         help=(
             "Use 'list', a history index, or a report "
             "identifier. Defaults to the latest persisted "
-            "report."
+            "execution report."
+        )
+    )
+
+    report_parser.add_argument(
+        "report_scope",
+        nargs="?",
+        default=None,
+        help=(
+            "Optional report history scope used with 'list': "
+            "'executions' or 'rollbacks'."
         )
     )
 

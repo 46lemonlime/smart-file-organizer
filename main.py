@@ -27,13 +27,14 @@ This file intentionally contains NO logic related to:
 - report reconstruction
 - report rendering
 - report history construction
+- report history filtering
 - persistence cleanup
 
 Instead, it functions as the composition root responsible
 for wiring together the application's handlers and subsystems.
 
 CLI parsing is delegated to cli/parser.py.
-Application workflows are delegated to handlers.py.
+Application workflows are delegated to the handlers package.
 
 Application Flow:
 CLI parsing
@@ -55,7 +56,7 @@ Subsystems:
     Rollback workflow coordination
 - reporting:
     Report generation, persistence, loading, history,
-    and presentation
+    filtering, and presentation
 - cleanup:
     Report deletion and application log cleanup
 
@@ -154,6 +155,12 @@ def main() -> None:
         None
     )
 
+    report_scope = getattr(
+        args,
+        "report_scope",
+        None
+    )
+
     cleanup_resource = getattr(
         args,
         "cleanup_resource",
@@ -171,6 +178,7 @@ def main() -> None:
         f"task={task} "
         f"path={path} "
         f"report_reference={report_reference} "
+        f"report_scope={report_scope} "
         f"cleanup_resource={cleanup_resource} "
         f"cleanup_target={cleanup_target} "
         f"dry_run={dry_run}"
@@ -195,7 +203,8 @@ def main() -> None:
             reports_directory,
             execution_reports_directory,
             rollback_reports_directory,
-            report_reference
+            report_reference,
+            report_scope
         )
 
     elif task == "rollback":

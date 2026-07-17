@@ -6,6 +6,7 @@ Coordinates report presentation and history workflows.
 
 Responsibilities:
 - Coordinate unified report history loading
+- Coordinate scoped report history filtering
 - Coordinate latest execution report loading
 - Coordinate report selection by index or identifier
 - Select the appropriate report renderer
@@ -21,6 +22,7 @@ implementing report loading, reconstruction, or rendering.
 Workflow:
 report command
 → report loading or history construction
+→ optional history filtering
 → report contract resolution
 → CLI rendering
 
@@ -29,6 +31,7 @@ Design Principles:
 - explicit dependency injection
 - deterministic workflow coordination
 - subsystem ownership preservation
+- stable global report references
 - minimal business logic
 
 IMPORTANT:
@@ -49,6 +52,7 @@ It does NOT:
 # -------------------------------------------------
 from core.contracts import (
     ExecutionReport,
+    ReportHistoryItem,
     RollbackReport,
 )
 
@@ -74,13 +78,23 @@ from utils.logger import log_error, log_info
 
 
 # -------------------------------------------------
+# REPORT HISTORY SCOPES
+# -------------------------------------------------
+REPORT_HISTORY_SCOPES = {
+    "executions": "execution",
+    "rollbacks": "rollback",
+}
+
+
+# -------------------------------------------------
 # PUBLIC: Report handler
 # -------------------------------------------------
 def handle_report(
     reports_directory: str,
     execution_reports_directory: str,
     rollback_reports_directory: str,
-    reference: str | None
+    reference: str | None,
+    report_scope: str | None
 ) -> None:
     """
     Routes report presentation workflows.
@@ -90,6 +104,10 @@ def handle_report(
         render the latest execution report
     - list:
         render unified chronological report history
+    - list executions:
+        render execution report history
+    - list rollbacks:
+        render rollback report history
     - numeric index:
         render a report selected from history
     - report identifier:
@@ -102,7 +120,8 @@ def handle_report(
 
     log_info(
         f"{REPORT_START} | "
-        f"reference={reference or 'latest'}"
+        f"reference={reference or 'latest'} "
+        f"scope={report_scope}"
     )
 
     if reference == "list":
@@ -110,7 +129,21 @@ def handle_report(
         _handle_report_list(
             reports_directory,
             execution_reports_directory,
-            rollback_reports_directory
+            rollback_reports_directory,
+            report_scope
+        )
+
+        return
+
+    if report_scope is not None:
+
+        _render_invalid_report_command()
+
+        log_info(
+            f"{REPORT_SKIPPED} | "
+            f"reason=unexpected_report_scope "
+            f"reference={reference} "
+            f"scope={report_scope}"
         )
 
         return
@@ -129,11 +162,32 @@ def handle_report(
 def _handle_report_list(
     reports_directory: str,
     execution_reports_directory: str,
-    rollback_reports_directory: str
+    rollback_reports_directory: str,
+    report_scope: str | None
 ) -> None:
     """
-    Loads and renders unified chronological report history.
+    Loads, optionally filters, and renders report history.
+
+    IMPORTANT:
+    Filtered results preserve their original global history
+    indices so report references remain stable across views.
     """
+
+    if (
+        report_scope is not None
+        and report_scope not in REPORT_HISTORY_SCOPES
+    ):
+
+        _render_invalid_report_scope()
+
+        log_info(
+            f"{REPORT_SKIPPED} | "
+            f"reason=unsupported_report_scope "
+            f"action=list "
+            f"scope={report_scope}"
+        )
+
+        return
 
     history_items = list_report_history(
         reports_directory,
@@ -141,14 +195,24 @@ def _handle_report_list(
         rollback_reports_directory
     )
 
+    if report_scope is not None:
+
+        history_items = _filter_report_history(
+            history_items,
+            report_scope
+        )
+
     if not history_items:
 
-        _render_empty_report_history()
+        _render_empty_report_history(
+            report_scope
+        )
 
         log_info(
             f"{REPORT_SKIPPED} | "
             f"reason=no_persisted_reports "
-            f"action=list"
+            f"action=list "
+            f"scope={report_scope or 'all'}"
         )
 
         return
@@ -160,8 +224,33 @@ def _handle_report_list(
     log_info(
         f"{REPORT_COMPLETE} | "
         f"action=list "
+        f"scope={report_scope or 'all'} "
         f"reports={len(history_items)}"
     )
+
+
+# -------------------------------------------------
+# PRIVATE: Filter report history
+# -------------------------------------------------
+def _filter_report_history(
+    history_items: list[ReportHistoryItem],
+    report_scope: str
+) -> list[ReportHistoryItem]:
+    """
+    Filters unified report history using a supported scope.
+
+    Original global history indices are preserved.
+    """
+
+    report_type = REPORT_HISTORY_SCOPES[
+        report_scope
+    ]
+
+    return [
+        history_item
+        for history_item in history_items
+        if history_item.report_type == report_type
+    ]
 
 
 # -------------------------------------------------
@@ -281,7 +370,9 @@ def _render_report_contract(
 # -------------------------------------------------
 # PRIVATE: Render empty report history
 # -------------------------------------------------
-def _render_empty_report_history() -> None:
+def _render_empty_report_history(
+    report_scope: str | None
+) -> None:
     """
     Renders feedback when no persisted reports are available.
     """
@@ -290,7 +381,17 @@ def _render_empty_report_history() -> None:
     print("Reports")
     print("-------")
     print()
-    print("No reports found.")
+
+    if report_scope is None:
+
+        print("No reports found.")
+
+    else:
+
+        print(
+            f"No {report_scope} reports found."
+        )
+
     print()
 
 
@@ -311,6 +412,47 @@ def _render_invalid_report_reference() -> None:
     print("    python3 main.py report list")
     print()
     print("to view available reports.")
+    print()
+
+
+# -------------------------------------------------
+# PRIVATE: Render invalid report scope
+# -------------------------------------------------
+def _render_invalid_report_scope() -> None:
+    """
+    Renders feedback for an unsupported report history scope.
+    """
+
+    print()
+    print("Invalid report history scope.")
+    print()
+    print("Use:")
+    print()
+    print("    python3 main.py report list")
+    print("    python3 main.py report list executions")
+    print("    python3 main.py report list rollbacks")
+    print()
+
+
+# -------------------------------------------------
+# PRIVATE: Render invalid report command
+# -------------------------------------------------
+def _render_invalid_report_command() -> None:
+    """
+    Renders feedback when a report scope is used without list.
+    """
+
+    print()
+    print("Invalid report command.")
+    print("Report scopes can only be used with 'list'.")
+    print()
+    print("Use:")
+    print()
+    print("    python3 main.py report")
+    print("    python3 main.py report list")
+    print("    python3 main.py report list executions")
+    print("    python3 main.py report list rollbacks")
+    print("    python3 main.py report <index_or_identifier>")
     print()
 
 

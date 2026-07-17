@@ -29,6 +29,8 @@ python3 main.py rollback --dry-run
 
 ```bash
 python3 main.py report list
+python3 main.py report list executions
+python3 main.py report list rollbacks
 ```
 
 **View a report**
@@ -113,6 +115,8 @@ Mover
    - automatic execution reports
    - JSON report persistence
    - unified report history
+   - chronological report history
+   - scoped report history filtering
    - report selection by index
    - report selection by identifier
    - report cleanup
@@ -527,6 +531,13 @@ Browse the unified report history.
 python3 main.py report list
 ```
 
+Filter the report history by workflow.
+
+```bash
+python3 main.py report list executions
+python3 main.py report list rollbacks
+```
+
 Display a persisted report by history index or identifier.
 
 ```bash
@@ -729,8 +740,8 @@ v0.4.0 and v0.5.0 were internal iterations merged into adjacent releases for ver
 * [x] Handler modularization
 * [x] Contract package modularization
 * [x] Core path centralization
+* [x] CLI refinements
 * [ ] Final code cleanup
-* [ ] CLI refinements
 * [ ] Performance optimization
 * [ ] Testing & stabilization
 * [ ] Final documentation review
@@ -753,6 +764,7 @@ v0.4.0 and v0.5.0 were internal iterations merged into adjacent releases for ver
 - Composition Root fully consolidated in `main.py`
 - Application handlers segregated into dedicated workflow modules
 - Standalone cleanup command introduced
+- Scoped report history filtering
 - Dedicated cleanup workflow
 - Modular contracts package with stable public API
 - Centralized contract validation utilities

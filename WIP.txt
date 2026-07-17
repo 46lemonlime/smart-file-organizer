@@ -21,17 +21,17 @@ Implemented:
     - removed obsolete metadata registry
     - synchronized main composition-root documentation
 
+[x] CLI Improvements
+    - added scoped report history filtering
+    - reviewed CLI consistency
+    - improved command ergonomics
+
 Planned:
 
 [ ] Architecture Review
     - review remaining high-responsibility modules
     - finalize architecture audit
     - remove remaining technical debt
-
-[ ] CLI Improvements
-    - add scoped report history filtering
-    - review CLI consistency
-    - improve command ergonomics
 
 [ ] Code Quality
     - remove obsolete code
@@ -53,9 +53,7 @@ Planned:
     - bug fixing
 
 [ ] Documentation
-    - synchronize README with implementation
     - finalize architecture documentation
-    - review command examples
     - review project structure
 
 [ ] v1.0.0 Stable Release

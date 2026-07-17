@@ -1,0 +1,15 @@
+{
+    "dry_run": true,
+    "total_processed": 1,
+    "total_failed": 0,
+    "results": [
+        {
+            "category": "documents",
+            "file": "test.txt",
+            "source_path": "/tmp/smartorg-rollback-test/smartorg-documents/test.txt",
+            "destination_path": "/tmp/smartorg-rollback-test/test.txt",
+            "status": "simulated",
+            "reason": null
+        }
+    ]
+}

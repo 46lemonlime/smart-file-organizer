@@ -276,7 +276,7 @@ def _render_report_history_items(
     - keep chronological history output readable
 
     IMPORTANT:
-    History ordering and index assignment are owned by loader.py.
+    History ordering and index assignment are owned by history.py.
     This helper only renders the supplied contracts.
     """
 

@@ -220,8 +220,10 @@ __marimo__/
 #-------------------------------
 # Smart File Organizer Ignores
 #-------------------------------
-#runtime artifacts
+# Runtime artifacts
 logs/
 reports/executions/*.json
-# AI Analysis - used for proyect development
-ai_analysis
+reports/rollbacks/*.json
+
+# Local AI-assisted development analysis
+ai_analysis/

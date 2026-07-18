@@ -34,11 +34,16 @@ persisted execution report
 
 Rollback Components:
 - reporting/loader.py:
-    Loads persisted execution reports
-- rollback/planner.py:
-    Builds rollback intent
-- rollback/executor.py:
-    Executes or simulates rollback operations
+  Coordinates persisted execution report loading.
+
+- reporting/history.py:
+  Resolves report history and report references.
+
+- reporting/storage.py:
+  Owns report file discovery and JSON persistence access.
+
+- reporting/deserializer.py:
+  Reconstructs persisted report contracts.
 
 Design Principles:
 - minimal orchestration

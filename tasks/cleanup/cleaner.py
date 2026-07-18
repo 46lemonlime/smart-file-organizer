@@ -103,7 +103,7 @@ from core.events import (
     REPORT_NOT_FOUND
 )
 
-from tasks.reporting.loader import (
+from tasks.reporting.history import (
     find_report_history_item,
     list_report_history
 )

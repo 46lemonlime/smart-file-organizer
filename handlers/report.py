@@ -62,12 +62,14 @@ from core.events import (
     REPORT_START,
 )
 
-from tasks.reporting.loader import (
+from tasks.reporting.history import (
     list_report_history,
+)
+
+from tasks.reporting.loader import (
     load_latest_execution_report,
     load_report_by_reference,
 )
-
 from tasks.reporting.reporter import (
     render_execution_report,
     render_report_history,

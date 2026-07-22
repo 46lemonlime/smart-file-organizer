@@ -157,6 +157,9 @@ FOLDER_CREATE_SIMULATION = "folder_create_simulation"
 ROLLBACK_START = "rollback_start"
 ROLLBACK_COMPLETE = "rollback_complete"
 ROLLBACK_SKIPPED = "rollback_skipped"
+ROLLBACK_FAILED = "rollback_failed"
+ROLLBACK_SIMULATION = "rollback_simulation"
+ROLLBACK_SUMMARY = "rollback_summary"
 
 
 # -------------------------------------------------

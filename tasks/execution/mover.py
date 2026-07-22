@@ -97,7 +97,6 @@ from core.events import (
     MOVE_SUMMARY,
     MOVE_SUMMARY_FAILED,
     MOVE_FAILED,
-    MOVE_SKIP,
     FOLDER_CREATED,
     FOLDER_CREATE_FAILED,
     FOLDER_CREATE_SIMULATION,
@@ -217,7 +216,40 @@ def move_files(
             category = operation.category
             file = operation.file
             folder_name = operation.folder_name
+            
+            # -------------------------------------------------
+            # SOURCE VALIDATION
+            # -------------------------------------------------
+            # Runtime filesystem validation.
+            #
+            # Filesystem state may change between:
+            # - discovery stage
+            # - mover stage
+            #
+            # Therefore runtime validation remains necessary
+            # even with trusted execution contracts.
+            if not os.path.exists(source_path):
 
+                total_failed += 1
+
+                execution_results.append(
+                    _build_execution_result(
+                        operation,
+                        status="failed",
+                        reason="file_missing"
+                    )
+                )
+
+                log_warning(
+                    f"{MOVE_FAILED} | "
+                    f"reason=file_missing "
+                    f"file={file} "
+                    f"source_path={source_path}"
+                )
+
+                continue
+
+            
             # -------------------------------------------------
             # FOLDER CREATION (SAFE + ONCE PER FOLDER)
             # -------------------------------------------------
@@ -267,37 +299,6 @@ def move_files(
 
                         continue
 
-            # -------------------------------------------------
-            # SOURCE VALIDATION
-            # -------------------------------------------------
-            # Runtime filesystem validation.
-            #
-            # Filesystem state may change between:
-            # - discovery stage
-            # - mover stage
-            #
-            # Therefore runtime validation remains necessary
-            # even with trusted execution contracts.
-            if not os.path.exists(source_path):
-
-                total_failed += 1
-
-                execution_results.append(
-                    _build_execution_result(
-                        operation,
-                        status="skipped",
-                        reason="file_missing"
-                    )
-                )
-
-                log_warning(
-                    f"{MOVE_SKIP} | "
-                    f"reason=file_missing "
-                    f"file={file} "
-                    f"source_path={source_path}"
-                )
-
-                continue
 
             # -------------------------------------------------
             # EXECUTION PHASE

@@ -234,12 +234,14 @@ operation and can later be inspected through the CLI.
 The subsystem is organized into independent components, each with
 a single responsibility:
 
-| Component | Responsibility |
+| Module | Responsibility |
 |---|---|
-| generator.py | Build report contracts |
-| saver.py | Persist reports |
-| loader.py | Load persisted reports |
-| reporter.py | Render reports through the CLI |
+| `generator.py` | Build new execution and rollback reports |
+| `reporter.py` | Persist and present generated reports |
+| `storage.py` | Discover report files and read persisted JSON |
+| `deserializer.py` | Reconstruct report contracts from persisted data |
+| `history.py` | Build, sort, filter, and resolve report history |
+| `loader.py` | Coordinate persisted report loading |
 
 #### Key capabilities
 - automatic report generation
@@ -338,10 +340,13 @@ smart-file-organizer/
 │   │   └── cleaner.py
 │   │
 │   └── reporting/
+│       ├── deserializer.py
 │       ├── generator.py
-│       ├── saver.py
+│       ├── history.py
 │       ├── loader.py
-│       └── reporter.py
+│       ├── reporter.py
+│       ├── saver.py
+│       └── storage.py
 │
 │
 ├── utils/
@@ -656,73 +661,15 @@ Smart File Organizer is a portfolio-grade automation engine demonstrating:
 
 #### Versioning Strategy (Semantic Versioning / SemVer)
 
-x.y.z format:
+Version numbers follow the **x.y.z** format:
 
-- **x (major):** stable release milestones  
-- **y (minor):** phase-based development progression  
-- **z (patch):** hotfixes and small improvements  
+- **x (major):** stable release milestones
+- **y (minor):** feature and development milestones
+- **z (patch):** bug fixes and small improvements
 
-Each major phase maps directly to a version (e.g. Phase 6 → v0.6.0).  
-v0.4.0 and v0.5.0 were internal iterations merged into adjacent releases for version alignment.
+Versions **v0.4.0** and **v0.5.0** were internal development iterations merged into adjacent releases to maintain a cleaner version history.
 
-
-#### Phase 1 - v0.1.0 Initial Setup
- * [x] CLI interface (basic skeleton)
- * [x] Project structure setup
-
-#### Phase 2 - v0.2.0 Core Automation
- * [x] Directory scanning
- * [x] File classification (by type)
- * [x] File moving / organization (smartorg-* folders)
- * [x] Basic task routing system
-
-#### Phase 3 - v0.3.0 Stability & Observability
-* [x] Core scanning and classification pipeline
-* [x] File moving engine (initial version)
-* [x] Structured logging system
-* [x] Module-based log ownership
-* [x] Execution trace improvements
-* [x] Hidden file filtering
-* [x] Logging format foundation (key=value structured contract)
-
-#### Phase 6 - v0.6.0 Execution Safety Layer
-* [x] Config system (YAML-driven rules)
-* [x] Config caching layer
-* [x] Classification rules externalized
-* [x] Prefix configuration system
-* [x] Dry-run mode (simulation execution)
-* [x] CLI override (--dry-run)
-* [x] Move summary logs
-* [x] Logging consistency improvements
-* [x] Config validation (basic YAML safety checks)
-* [x] Controlled execution architecture
-
-#### Phase 7 - v0.7.0 Reliability & Edge Case Hardening
-* [x] Standardize error handling across modules (consistent log_error structure)
-* [x] Improve file operation resilience (per-file isolation, safe continuation)
-* [x] Handle classification edge cases (empty dirs, bad extensions, invalid inputs)
-* [x] Validate dry-run parity vs real execution (logic identical, only FS differs)
-* [x] Improve failure log clarity (structured, non-ambiguous messages)
-* [x] Refactor pipeline architecture (scanner → filter → classify → plan → move)
-* [x] Add execution planner layer (deterministic plan generation)
-* [x] Enforce execution-only mover (no decision logic in file_mover)
-* [x] Harden config edge cases (YAML safety, missing keys, defaults)
-* [x] Improve observability (structured logs, op_id, total_failed)
-* [x] Ensure full traceability (end-to-end structured logging)
-
-#### Phase 8 - v0.8.0 Architecture Hardening & Extensibility
-
-* [x] Layered discovery architecture
-* [x] Coordinator-based discovery pipeline
-* [x] Typed pipeline contracts
-* [x] Contract-first architecture
-* [x] Typed runtime configuration
-* [x] Configuration authority layer
-* [x] Discovery pipeline simplification
-* [x] Reduced module coupling
-* [x] Improved subsystem cohesion
-
-#### Phase 9 - v0.9.0 Operational Maturity
+#### v0.9.0 — Operational Maturity (latest stable release)
 * [x] Reporting subsystem
 * [x] Reporting architecture
 * [x] Configuration-driven report persistence
@@ -733,18 +680,29 @@ v0.4.0 and v0.5.0 were internal iterations merged into adjacent releases for ver
 * [x] Report history
 * [x] Report cleanup
 
-#### Phase 10 - v1.0.0 Stable Release Preparation
+#### v1.0.0 — Project Stabilization (currently in development)
 
 * [x] Architecture review
 * [x] Cleanup command architecture
 * [x] Handler modularization
 * [x] Contract package modularization
 * [x] Core path centralization
+* [x] Workflow event taxonomy centralization
 * [x] CLI refinements
+* [x] Manual workflow validation
 * [ ] Final code cleanup
 * [ ] Performance optimization
-* [ ] Testing & stabilization
+* [ ] Packaging & distribution
 * [ ] Final documentation review
+* [ ] Stable public release
+
+#### v1.1.0+ — Future Releases
+
+* [ ] Automated testing infrastructure
+* [ ] Terminal autocompletion
+* [ ] Extended rollback (environment restoration)
+* [ ] Graphical user interface (GUI)
+
 
 ### 🚧 Current Limitations
 
@@ -760,19 +718,45 @@ v0.4.0 and v0.5.0 were internal iterations merged into adjacent releases for ver
 
 ### v1.0.0 (in progress)
 
-- Ongoing architecture review and responsibility audit
-- Composition Root fully consolidated in `main.py`
-- Application handlers segregated into dedicated workflow modules
-- Standalone cleanup command introduced
-- Scoped report history filtering
-- Dedicated cleanup workflow
-- Modular contracts package with stable public API
-- Centralized contract validation utilities
-- Centralized application path constants
+- Completed architecture review and responsibility audit
+- Consolidated `main.py` as the application Composition Root
+- Extracted application handlers from `main.py`
+- Segregated handlers into dedicated workflow modules
+- Introduced standalone cleanup command
+- Introduced dedicated cleanup subsystem
+- Simplified report command architecture
+- Reviewed reporting loader architecture
+- Modularized the core contracts package
+- Centralized reusable contract validation utilities
+- Centralized static application paths in `core/paths.py`
 - Centralized workflow event taxonomy
-- Improved dependency ownership and module cohesion
-- Improved application layer architecture
-- Documentation synchronized with architectural refactors
+- Removed duplicated logging path constants
+- Removed obsolete subsystem imports
+- Removed obsolete handler implementation
+- Removed obsolete metadata registry
+- Added scoped report history filtering
+- Improved CLI consistency and command ergonomics
+- Reviewed configuration loader responsibilities
+- Reviewed execution mover responsibilities
+- Reviewed rollback planner responsibilities
+- Reviewed rollback executor responsibilities
+- Confirmed separation between execution and rollback contracts
+- Standardized execution and rollback operation semantics
+- Improved source validation in filesystem move execution
+- Standardized rollback runtime failure events
+- Standardized rollback dry-run simulation events
+- Validated missing-source execution behavior
+- Validated prevention of unnecessary destination directory creation
+- Validated rollback missing-source handling
+- Validated rollback destination-conflict handling
+- Validated rollback dry-run behavior
+- Validated rollback path inversion
+- Validated dry-run execution end-to-end
+- Validated live execution end-to-end
+- Validated report persistence and loading
+- Validated live rollback end-to-end
+- Completed project-wide compilation validation
+- Synchronized architecture and Composition Root documentation
 
 ### v0.9.0
 

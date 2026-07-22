@@ -5,58 +5,115 @@
 Implemented:
 
 [x] Architecture Review
-    - extracted application handlers from main.py
-    - segregated application handlers into dedicated workflow modules
-    - introduced standalone cleanup command
-    - introduced cleanup subsystem
-    - simplified report command architecture
-    - reviewed reporting loader architecture
-      (no refactor required)
-    - modularized core contracts package
-    - centralized static logging paths in core/paths.py
-    - centralized workflow event taxonomy
-    - removed duplicated logging path constants
-    - removed obsolete subsystem imports from main.py
-    - removed obsolete handler implementation
-    - removed obsolete metadata registry
-    - synchronized main composition-root documentation
+- extracted application handlers from main.py
+- segregated application handlers into dedicated workflow modules
+- introduced standalone cleanup command
+- introduced cleanup subsystem
+- simplified report command architecture
+- reviewed reporting loader architecture
+(no refactor required)
+- modularized core contracts package
+- centralized static logging paths in core/paths.py
+- centralized workflow event taxonomy
+- removed duplicated logging path constants
+- removed obsolete subsystem imports from main.py
+- removed obsolete handler implementation
+- removed obsolete metadata registry
+- synchronized main composition-root documentation
+- reviewed config loader responsibilities
+- reviewed execution mover architecture
+- reviewed rollback planner architecture
+- reviewed rollback executor architecture
+- confirmed separation between execution and rollback contracts
+- finalized skipped vs failed operation semantics
+- completed remaining high-responsibility module review
+- finalized architecture audit
 
 [x] CLI Improvements
-    - added scoped report history filtering
-    - reviewed CLI consistency
-    - improved command ergonomics
+- added scoped report history filtering
+- reviewed CLI consistency
+- improved command ergonomics
+- validated move command help interface
+- validated report command workflow
+- validated rollback command workflow
 
-Planned:
+[x] Code Quality
+- removed obsolete execution and rollback event imports
+- normalized execution and rollback failure events
+- aligned dry-run logging with simulation events
+- improved source validation order in filesystem mover
+- reviewed comments and docstrings in critical workflow modules
+- validated project compilation with compileall
 
-[ ] Architecture Review
-    - review remaining high-responsibility modules
-    - finalize architecture audit
-    - remove remaining technical debt
+[x] Manual Testing & Stabilization
+- validated missing execution source handling
+- validated prevention of unnecessary destination folder creation
+- validated rollback source missing behavior
+- validated rollback destination conflict behavior
+- validated rollback dry-run behavior
+- validated rollback path inversion
+- validated dry-run end-to-end workflow
+- validated live move end-to-end workflow
+- validated persisted report loading
+- validated live rollback end-to-end workflow
+- completed behavioral consistency audit for critical workflows
 
-[ ] Code Quality
-    - remove obsolete code
-    - normalize naming
-    - improve comments and docstrings
-    - improve module cohesion where appropriate
+Planned Before v1.0.0:
+
+[ ] Packaging & Distribution
+- package project as an installable Python application
+- expose the `smartorg` terminal command
+- configure CLI entry point
+- prepare pyproject.toml metadata
+- verify installation in a clean environment
+- document installation and upgrade process
 
 [ ] Performance & Memory
-    - optimize filesystem operations
-    - reduce unnecessary allocations
-    - benchmark large directories
-    - profile execution bottlenecks
-
-[ ] Testing & Stabilization
-    - edge-case validation
-    - integration testing
-    - regression testing
-    - behavioral consistency audit
-    - bug fixing
+- optimize filesystem operations where justified
+- reduce unnecessary allocations
+- benchmark large directories
+- profile execution bottlenecks
+- verify that optimizations preserve current behavior
 
 [ ] Documentation
-    - finalize architecture documentation
-    - review project structure
+- finalize architecture documentation
+- review project structure
+- document current rollback scope
+- document known limitations
+- add end-to-end usage examples
 
 [ ] v1.0.0 Stable Release
-    - final semantic version update
-    - portfolio-ready presentation
-    - stable public release
+- final semantic version update
+- final documentation review
+- portfolio-ready presentation
+- stable public release
+
+# -------------------------------------------------
+# FUTURE VERSIONS — v1.1.0 AND LATER
+# -------------------------------------------------
+
+[ ] Automated Testing
+- introduce automated unit testing
+- introduce integration testing
+- introduce regression testing
+- cover discovery, planning, execution, reporting, cleanup, and rollback
+- automate current manual stabilization scenarios
+
+[ ] Terminal Autocompletion
+- implement command autocompletion
+- implement option and argument autocompletion
+- evaluate argparse-compatible tooling such as argcomplete
+- support common shells where practical
+
+[ ] Extended Rollback
+- restore the complete execution environment
+- remove directories created by the original execution
+- remove directories only when empty
+- preserve pre-existing directories
+- extend rollback contracts to track environment mutations safely
+
+[ ] Graphical User Interface
+- design a desktop GUI workflow
+- expose move, report, rollback, and cleanup operations
+- preserve the existing application layer and contracts
+- keep CLI and GUI as separate presentation layers

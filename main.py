@@ -8,7 +8,7 @@ composition root.
 Responsibilities:
 - Consume parsed CLI arguments
 - Load application configuration
-- Build the runtime execution context
+- Resolve runtime execution values
 - Inject application dependencies
 - Route supported commands to application handlers
 - Emit application startup and execution-context logs
@@ -227,6 +227,9 @@ def main() -> None:
             cleanup_resource,
             cleanup_target
         )
+
+    else:
+        raise ValueError(f"Unsupported task: {task}")
 
 
 # -------------------------------------------------

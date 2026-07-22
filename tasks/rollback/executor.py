@@ -83,6 +83,14 @@ from core.contracts import (
     RollbackResult
 )
 
+from core.events import (
+    ROLLBACK_START,
+    ROLLBACK_COMPLETE,
+    ROLLBACK_FAILED,
+    ROLLBACK_SIMULATION,
+    ROLLBACK_SUMMARY
+)
+
 
 # -------------------------------------------------
 # PRIVATE: Build rollback result
@@ -129,7 +137,7 @@ def execute_rollback_plan(
     """
 
     log_info(
-        f"rollback_start | "
+        f"{ROLLBACK_START} | "
         f"operations={len(plan.operations)} "
         f"dry_run={dry_run}"
     )
@@ -168,7 +176,7 @@ def execute_rollback_plan(
                 )
 
                 log_warning(
-                    f"rollback_skip | "
+                    f"{ROLLBACK_FAILED} | "
                     f"reason=rollback_source_missing "
                     f"file={file} "
                     f"source_path={source_path}"
@@ -192,7 +200,7 @@ def execute_rollback_plan(
                 )
 
                 log_warning(
-                    f"rollback_skip | "
+                    f"{ROLLBACK_FAILED} | "
                     f"reason=rollback_destination_exists "
                     f"file={file} "
                     f"destination_path={destination_path}"
@@ -213,7 +221,7 @@ def execute_rollback_plan(
                 )
 
                 log_info(
-                    f"rollback_simulation | "
+                    f"{ROLLBACK_SIMULATION} | "
                     f"file={file} "
                     f"destination_path={destination_path}"
                 )
@@ -233,7 +241,7 @@ def execute_rollback_plan(
                 )
 
                 log_info(
-                    f"rollback_completed | "
+                    f"{ROLLBACK_COMPLETE} | "
                     f"file={file} "
                     f"destination_path={destination_path}"
                 )
@@ -253,7 +261,7 @@ def execute_rollback_plan(
             )
 
             log_error(
-                f"rollback_failed | "
+                f"{ROLLBACK_FAILED} | "
                 f"reason=unexpected_rollback_failure "
                 f"file={operation.file}",
                 error=e
@@ -267,12 +275,12 @@ def execute_rollback_plan(
     )
 
     log_info(
-        f"rollback_summary | "
+        f"{ROLLBACK_SUMMARY} | "
         f"processed={rollback_report.total_processed} "
         f"failed={rollback_report.total_failed} "
         f"dry_run={rollback_report.dry_run}"
     )
 
-    log_info("rollback_complete")
+    log_info(f"{ROLLBACK_COMPLETE} | ")
 
     return rollback_report

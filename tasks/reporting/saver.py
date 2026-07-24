@@ -130,13 +130,14 @@ def _build_report_filename() -> str:
     """
 
     timestamp = datetime.now().isoformat(
-        timespec="seconds"
+        timespec="microseconds"
     )
 
     safe_timestamp = (
         timestamp
         .replace(":", "")
         .replace("-", "")
+        .replace(".", "")
     )
 
     return f"{safe_timestamp}.json"

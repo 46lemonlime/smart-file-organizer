@@ -70,8 +70,8 @@ Design Principles:
 # IMPORTS
 # -------------------------------------------------
 import datetime
-import inspect
 import os
+import sys
 import uuid
 
 from core.paths import (
@@ -79,56 +79,90 @@ from core.paths import (
     LOGS_DIRECTORY,
 )
 
-# Session identifier for correlating logs
+
+# -------------------------------------------------
+# SESSION STATE
+# -------------------------------------------------
+# Session identifier for correlating logs.
 SESSION_ID = str(uuid.uuid4())[:8]
+
+# Avoids checking or creating the logging directory for every
+# individual log entry.
+_LOG_DIRECTORY_READY = False
 
 
 # -------------------------------------------------
-# INTERNAL: get caller module name
+# INTERNAL: Get caller module name
 # -------------------------------------------------
 def _get_caller_module() -> str:
     """
-    Returns normalized caller module name.
+    Returns the normalized caller module name.
 
     Examples:
     - __main__ → MAIN
     - tasks.file_scanner → FILE_SCANNER
+
+    The expected call chain is:
+
+        caller
+        → log_info / log_warning / log_error
+        → _write_log
+        → _get_caller_module
     """
 
-    stack = inspect.stack()
+    try:
 
-    for frame_info in stack:
-        module = inspect.getmodule(frame_info.frame)
+        caller_frame = sys._getframe(3)
 
-        if module and module.__name__ != __name__:
-            name = module.__name__.split(".")[-1].upper()
+        module_name = caller_frame.f_globals.get(
+            "__name__",
+            "UNKNOWN"
+        )
 
-            if name == "__MAIN__":
-                return "MAIN"
+        name = module_name.split(".")[-1].upper()
 
-            return name
+        if name == "__MAIN__":
 
-    return "UNKNOWN"
+            return "MAIN"
+
+        return name
+
+    except (ValueError, AttributeError):
+
+        return "UNKNOWN"
 
 
 # -------------------------------------------------
-# INTERNAL: ensure log directory exists
+# INTERNAL: Ensure log directory exists
 # -------------------------------------------------
 def _ensure_log_directory() -> None:
     """
-    Ensures log directory exists before writing logs.
+    Ensures the log directory exists before writing logs.
+
+    The filesystem check is performed only once per process
+    after successful directory preparation.
     """
+
+    global _LOG_DIRECTORY_READY
+
+    if _LOG_DIRECTORY_READY:
+
+        return
 
     os.makedirs(
         LOGS_DIRECTORY,
         exist_ok=True
     )
 
+    _LOG_DIRECTORY_READY = True
+
 
 # -------------------------------------------------
-# INTERNAL: sanitize structured values
+# INTERNAL: Sanitize structured values
 # -------------------------------------------------
-def _sanitize_log_value(value) -> str:
+def _sanitize_log_value(
+    value
+) -> str:
     """
     Prevents structured log corruption.
 
@@ -150,16 +184,16 @@ def _sanitize_log_value(value) -> str:
 
 
 # -------------------------------------------------
-# INTERNAL: write log entry
+# INTERNAL: Write log entry
 # -------------------------------------------------
 def _write_log(
-        level: str,
-        message: str
-    ) -> None:
+    level: str,
+    message: str
+) -> None:
     """
-    Writes formatted log entry into log file.
+    Writes a formatted log entry into the log file.
 
-    Logging failures should NEVER crash application flow.
+    Logging failures must never interrupt application flow.
     """
 
     try:
@@ -168,58 +202,81 @@ def _write_log(
 
         module = _get_caller_module()
 
-        # Cleaner ISO timestamp
-        timestamp = datetime.datetime.now().isoformat(timespec="seconds")
+        timestamp = datetime.datetime.now().isoformat(
+            timespec="milliseconds"
+        )
 
-        # Defensive normalization
         message = str(message)
 
-        line = f"[{timestamp}][{SESSION_ID}][{level}][{module}] {message}\n"
+        line = (
+            f"[{timestamp}]"
+            f"[{SESSION_ID}]"
+            f"[{level}]"
+            f"[{module}] "
+            f"{message}\n"
+        )
 
-        with open(LOG_FILE_PATH, "a", encoding="utf-8") as file:
+        with open(
+            LOG_FILE_PATH,
+            "a",
+            encoding="utf-8"
+        ) as file:
+
             file.write(line)
 
-    except Exception as e:
-        # Final fallback protection
-        print(f"[LOGGER_FAILURE] {type(e).__name__}: {e}")
+    except Exception as error:
+
+        print(
+            f"[LOGGER_FAILURE] "
+            f"{type(error).__name__}: {error}"
+        )
 
 
 # -------------------------------------------------
 # PUBLIC: INFO log
 # -------------------------------------------------
-def log_info(message: str) -> None:
+def log_info(
+    message: str
+) -> None:
     """
-    General operational logging.
+    Writes a general operational log entry.
     """
 
-    _write_log("INFO", message)
+    _write_log(
+        "INFO",
+        message
+    )
 
 
 # -------------------------------------------------
 # PUBLIC: WARNING log
 # -------------------------------------------------
-def log_warning(message: str) -> None:
+def log_warning(
+    message: str
+) -> None:
     """
-    Recoverable or non-critical issues.
+    Writes a recoverable or non-critical issue.
     """
 
-    _write_log("WARN", message)
+    _write_log(
+        "WARN",
+        message
+    )
 
 
 # -------------------------------------------------
 # PUBLIC: ERROR log
 # -------------------------------------------------
 def log_error(
-        message: str, 
-        error: Exception | None = None
-    ) -> None:
+    message: str,
+    error: Exception | None = None
+) -> None:
     """
-    Failure and exception logging.
+    Writes a failure or exception log entry.
     """
 
     final_message = str(message)
 
-    # Optional structured exception enrichment
     if error is not None:
 
         final_message += (
@@ -227,10 +284,16 @@ def log_error(
         )
 
         if str(error):
-            safe_details = _sanitize_log_value(error)
+
+            safe_details = _sanitize_log_value(
+                error
+            )
 
             final_message += (
                 f" | details={safe_details}"
             )
 
-    _write_log("ERROR", final_message)
+    _write_log(
+        "ERROR",
+        final_message
+    )

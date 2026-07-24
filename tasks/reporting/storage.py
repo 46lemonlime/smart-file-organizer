@@ -190,27 +190,26 @@ def get_report_files(
     their workflow.
     """
 
-    if not os.path.isdir(reports_path):
-
-        return []
-
     report_files = []
 
-    for filename in os.listdir(reports_path):
+    try:
 
-        report_path = os.path.join(
-            reports_path,
-            filename
-        )
+        with os.scandir(reports_path) as entries:
 
-        if (
-            filename.endswith(".json")
-            and os.path.isfile(report_path)
-        ):
+            for entry in entries:
 
-            report_files.append(
-                report_path
-            )
+                if (
+                    entry.name.endswith(".json")
+                    and entry.is_file()
+                ):
+
+                    report_files.append(
+                        entry.path
+                    )
+
+    except (FileNotFoundError, NotADirectoryError):
+
+        return []
 
     return report_files
 
@@ -248,15 +247,35 @@ def get_latest_report_path(
         20260710T090146
     """
 
-    report_files = get_report_files(
-        reports_path
-    )
+    latest_report_path = None
+    latest_report_id = None
 
-    if not report_files:
+    try:
+
+        with os.scandir(reports_path) as entries:
+
+            for entry in entries:
+
+                if (
+                    not entry.name.endswith(".json")
+                    or not entry.is_file()
+                ):
+                    continue
+
+                report_id = get_report_id_from_path(
+                    entry.name
+                )
+
+                if (
+                    latest_report_id is None
+                    or report_id > latest_report_id
+                ):
+
+                    latest_report_id = report_id
+                    latest_report_path = entry.path
+
+    except (FileNotFoundError, NotADirectoryError):
 
         return None
 
-    return max(
-        report_files,
-        key=get_report_id_from_path
-    )
+    return latest_report_path

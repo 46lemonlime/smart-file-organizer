@@ -91,36 +91,24 @@ def scan_directory(
         RawDiscoveryDataset | None
     """
 
-    log_info(f"{SCAN_START} | "
-             f"path={path}"
+    log_info(
+        f"{SCAN_START} | "
+        f"path={path}"
     )
 
     try:
-
-        items = os.listdir(path)
-
-        log_info(
-            f"{SCAN_ITEMS} | "
-            f"count={len(items)}"
-        )
-
-        # -------------------------------------------------
-        # NORMALIZED DISCOVERY OUTPUT
-        # -------------------------------------------------
         discovered_items: RawDiscoveryDataset = []
 
-        for item in items:
-
-            full_path = os.path.join(path, item)
-
-            discovered_items.append(
-                DiscoveredItem(
-                    name=item,
-                    full_path=full_path,
-                    is_file=os.path.isfile(full_path),
-                    is_directory=os.path.isdir(full_path)
+        with os.scandir(path) as entries:
+            for entry in entries:
+                discovered_items.append(
+                    DiscoveredItem(
+                        name=entry.name,
+                        full_path=entry.path,
+                        is_file=entry.is_file(),
+                        is_directory=entry.is_dir()
+                    )
                 )
-            )
 
         log_info(
             f"{SCAN_COMPLETE} | "
@@ -130,7 +118,6 @@ def scan_directory(
         return discovered_items
 
     except Exception as e:
-
         log_error(
             f"{SCAN_FAILED} | "
             f"reason=os_error "

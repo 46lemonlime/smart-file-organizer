@@ -84,6 +84,7 @@ from core.events import (
     PLAN_BUILD_COMPLETE,
 )
 
+
 # -------------------------------------------------
 # PUBLIC: Build execution plan
 # -------------------------------------------------
@@ -99,9 +100,10 @@ def build_execution_plan(
         ExecutionPlan
     """
 
-    log_info(f"{PLAN_BUILD_START} | "
-             f"path={path}"
-        )
+    log_info(
+        f"{PLAN_BUILD_START} | "
+        f"path={path}"
+    )
 
     # -------------------------------------------------
     # PLAN STRUCTURE
@@ -115,8 +117,6 @@ def build_execution_plan(
         operations=[],
         skipped=[]
     )
-
-    planned_folders = set()
 
     # -------------------------------------------------
     # CATEGORY ITERATION
@@ -144,16 +144,10 @@ def build_execution_plan(
         # -------------------------------------------------
         # FOLDER REGISTRATION
         # -------------------------------------------------
-        # Register once to avoid duplicate creation entries
-        if destination_folder not in planned_folders:
-
-            planned_folders.add(destination_folder)
-
-            if not os.path.exists(destination_folder):
-
-                plan.folders_to_create.append(
-                    destination_folder
-                )
+        if not os.path.exists(destination_folder):
+            plan.folders_to_create.append(
+                destination_folder
+            )
 
         # -------------------------------------------------
         # FILE ITERATION
@@ -161,12 +155,10 @@ def build_execution_plan(
         for file in files:
 
             # -------------------------------------------------
-            # PATH RESOLUTION
+            # SOURCE PATH RESOLUTION
             # -------------------------------------------------
-            source_path = os.path.join(path, file)
-
-            destination_path = os.path.join(
-                destination_folder,
+            source_path = os.path.join(
+                path,
                 file
             )
 
@@ -195,6 +187,14 @@ def build_execution_plan(
                 continue
 
             # -------------------------------------------------
+            # DESTINATION PATH RESOLUTION
+            # -------------------------------------------------
+            destination_path = os.path.join(
+                destination_folder,
+                file
+            )
+
+            # -------------------------------------------------
             # FINAL EXECUTION CONTRACT
             # -------------------------------------------------
             # Structure consumed directly by executor.py
@@ -213,12 +213,12 @@ def build_execution_plan(
     # FINAL SUMMARY
     # -------------------------------------------------
     if not plan.operations:
-        
         log_info(
             f"{PLAN_BUILD_EMPTY} | "
             f"reason=no_operations "
             f"path={path}"
         )
+
     log_info(
         f"{PLAN_BUILD_COMPLETE} | "
         f"folders={len(plan.folders_to_create)} "

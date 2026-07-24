@@ -11,6 +11,7 @@ Responsibilities:
 - Integrate scanner, filter, and classifier modules
 - Apply discovery filtering rules
 - Apply classification rules
+- Build reusable classification lookup structures
 - Normalize classified discovery output
 - Produce discovery-stage result contracts
 - Consume trusted discovery and configuration contracts
@@ -47,6 +48,7 @@ Design Principles:
 - Stable discovery contracts
 - Config-driven behavior
 - Structured observability
+- Reusable classification lookup structures
 
 Contract Usage:
 This module consumes trusted discovery and configuration contracts
@@ -113,7 +115,10 @@ from utils.config_loader import get_config
 
 from tasks.discovery.scanner import scan_directory
 from tasks.discovery.filter import should_skip_item
-from tasks.discovery.classifier import classify_file
+from tasks.discovery.classifier import (
+    build_extension_index,
+    classify_file
+)
 
 from core.events import (
     DISCOVERY_START,
@@ -121,6 +126,7 @@ from core.events import (
     DISCOVERY_SKIP,
     DISCOVERY_FALLBACK
 )
+
 
 # -------------------------------------------------
 # PUBLIC: Discovery pipeline
@@ -144,6 +150,15 @@ def discover_files(path: str) -> DiscoveryResult | None:
     categories = config.categories
 
     # -------------------------------------------------
+    # CLASSIFICATION LOOKUP INDEX
+    # -------------------------------------------------
+    # Configured extensions are normalized once per discovery
+    # execution instead of once for every discovered file.
+    extension_index = build_extension_index(
+        categories
+    )
+
+    # -------------------------------------------------
     # RAW DISCOVERY
     # -------------------------------------------------
     discovered_items: RawDiscoveryDataset | None = (
@@ -160,7 +175,7 @@ def discover_files(path: str) -> DiscoveryResult | None:
     # to preserve config-driven architecture.
     result: ClassifiedDiscovery = {
         category: []
-        for category in categories.keys()
+        for category in categories
     }
 
     # -------------------------------------------------
@@ -229,7 +244,7 @@ def discover_files(path: str) -> DiscoveryResult | None:
 
             category = classify_file(
                 name,
-                categories
+                extension_index
             )
 
             # -------------------------------------------------

@@ -11,7 +11,7 @@ Implemented:
 - introduced cleanup subsystem
 - simplified report command architecture
 - reviewed reporting loader architecture
-(no refactor required)
+  (no refactor required)
 - modularized core contracts package
 - centralized static logging paths in core/paths.py
 - centralized workflow event taxonomy
@@ -58,6 +58,37 @@ Implemented:
 - validated live rollback end-to-end workflow
 - completed behavioral consistency audit for critical workflows
 
+[x] Performance & Memory Audit
+- audited CPU, memory, filesystem I/O, and scalability across critical modules
+- replaced repeated directory listing and path-stat calls with os.scandir where justified
+- optimized discovery scanning with DirEntry path and type metadata
+- introduced a precomputed extension index for constant-time file classification
+- preserved first-match category semantics in the extension index
+- removed unnecessary planner folder-tracking allocations
+- deferred destination-path construction until after source validation
+- reviewed execution mover performance
+  (no changes required)
+- reviewed rollback planner performance
+  (no changes required)
+- reviewed rollback executor filesystem validation
+  (no mutation-path changes required)
+- optimized report history reindexing by reusing existing history items
+- optimized report history resolution with a single-pass ambiguity check
+- optimized report storage discovery with os.scandir
+- optimized latest-report resolution to use constant auxiliary memory
+- reviewed reporting generator, reporter, saver, loader, and deserializer performance
+  (no changes required)
+- replaced inspect.stack() with sys._getframe() in structured logging
+- avoided repeated log-directory filesystem checks after successful initialization
+- increased structured log timestamp precision to milliseconds
+- reviewed config loader caching and validation performance
+  (no performance changes required)
+- added explicit UTF-8 configuration-file decoding
+- reviewed main.py composition-root performance
+  (no changes required)
+- confirmed linear scalability across primary collection-processing workflows
+- verified that performance optimizations preserve current behavior and architecture
+
 Planned Before v1.0.0:
 
 [ ] Packaging & Distribution
@@ -68,12 +99,13 @@ Planned Before v1.0.0:
 - verify installation in a clean environment
 - document installation and upgrade process
 
-[ ] Performance & Memory
-- optimize filesystem operations where justified
-- reduce unnecessary allocations
-- benchmark large directories
-- profile execution bottlenecks
-- verify that optimizations preserve current behavior
+[ ] Performance Validation
+- benchmark representative large directories
+- measure discovery and classification throughput
+- profile execution bottlenecks under realistic workloads
+- evaluate per-operation logging cost at scale
+- verify memory behavior with large report histories
+- compare optimized behavior against the previous implementation
 
 [ ] Documentation
 - finalize architecture documentation
@@ -81,6 +113,7 @@ Planned Before v1.0.0:
 - document current rollback scope
 - document known limitations
 - add end-to-end usage examples
+- document performance characteristics and scalability expectations
 
 [ ] v1.0.0 Stable Release
 - final semantic version update

@@ -341,7 +341,11 @@ def _load_yaml() -> dict | None:
             f"path={CONFIG_PATH}"
         )
 
-        with open(CONFIG_PATH, "r") as file:
+        with open(
+            CONFIG_PATH,
+            "r",
+            encoding="utf-8"
+        ) as file:
             config = yaml.safe_load(file)
 
         log_info(

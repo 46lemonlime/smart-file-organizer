@@ -5,6 +5,7 @@ This module acts as the classification layer of the discovery subsystem.
 
 Responsibilities:
 - Normalize file extensions
+- Build normalized extension lookup indexes
 - Classify files using config-driven rules
 - Provide deterministic category assignment
 - Preserve classification contract guarantees
@@ -22,21 +23,28 @@ responsible for mapping filenames to semantic categories
 defined by the application configuration.
 
 Classification Overview:
+configured categories
+→ extension index construction
+
 filename
 → extension normalization
-→ config-driven lookup
+→ indexed category lookup
 → category assignment
 
 Input Contract:
 Consumes:
 - validated filename
 - validated CategoryConfig mapping
+- normalized extension lookup index
 
 Output Contract:
-Returns a category name.
+Returns:
+- normalized extension lookup index
+- category name
 
 Failure Contract:
 - consumes trusted pipeline contracts
+- ignores invalid configured extensions
 - returns "others" for unknown extensions
 - guarantees deterministic classification
 
@@ -46,6 +54,7 @@ Design Principles:
 - trusted pipeline contracts
 - contract-first architecture
 - stable output guarantees
+- precomputed lookup structures
 
 Observability:
 Classification is intentionally silent.
@@ -71,6 +80,7 @@ def normalize_extension(
 ) -> str | None:
     """
     Normalizes file extensions for deterministic comparison.
+
     Returns:
         Normalized extension or None if invalid.
     """
@@ -99,15 +109,50 @@ def normalize_extension(
 
 
 # -------------------------------------------------
+# PUBLIC: Build extension lookup index
+# -------------------------------------------------
+def build_extension_index(
+    categories: dict[str, CategoryConfig]
+) -> dict[str, str]:
+    """
+    Builds a normalized extension-to-category lookup index.
+
+    The first configured category containing an extension
+    retains ownership of that extension.
+
+    Returns:
+        Mapping of normalized extensions to category names.
+    """
+
+    extension_index: dict[str, str] = {}
+
+    for category_name, category_config in categories.items():
+
+        for extension in category_config.extensions:
+
+            normalized_extension = normalize_extension(
+                extension
+            )
+
+            if normalized_extension:
+                extension_index.setdefault(
+                    normalized_extension,
+                    category_name
+                )
+
+    return extension_index
+
+
+# -------------------------------------------------
 # PUBLIC: Classify file
 # -------------------------------------------------
 def classify_file(
     filename: str,
-    categories: dict[str, CategoryConfig]
+    extension_index: dict[str, str]
 ) -> str:
     """
-    Assigns a category to a file using config-driven
-    extension matching.
+    Assigns a category to a file using a precomputed
+    normalized extension lookup index.
 
     Returns:
         Category name or "others".
@@ -130,21 +175,9 @@ def classify_file(
         return "others"
 
     # -------------------------------------------------
-    # CONFIG-DRIVEN LOOKUP
+    # INDEXED CATEGORY LOOKUP
     # -------------------------------------------------
-    for category_name, category_config in categories.items():
-
-        # -------------------------------------------------
-        # EXTENSION MATCHING
-        # -------------------------------------------------
-        for extension in category_config.extensions:
-
-            if normalized_ext == normalize_extension(extension):
-                return category_name
-    
-    # -------------------------------------------------
-    # FALLBACK CATEGORY
-    # -------------------------------------------------
-    # Unknown extensions are intentionally grouped
-    # into the generic "others" category.
-    return "others"
+    return extension_index.get(
+        normalized_ext,
+        "others"
+    )

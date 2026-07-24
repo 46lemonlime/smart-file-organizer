@@ -194,36 +194,26 @@ def _reindex_report_history(
     history_items: list[ReportHistoryItem]
 ) -> list[ReportHistoryItem]:
     """
-    Rebuilds history entries with stable one-based indexes.
+    Assigns stable one-based indexes to existing history items.
 
     Indexes are assigned only after execution and rollback
     reports have been combined and sorted.
+
+    The existing contracts are updated in place to avoid
+    rebuilding the full history list and allocating duplicate
+    ReportHistoryItem objects.
 
     RETURNS:
         list[ReportHistoryItem]
     """
 
-    indexed_items = []
-
     for index, item in enumerate(
         history_items,
         start=1
     ):
+        item.index = index
 
-        indexed_items.append(
-            ReportHistoryItem(
-                index=index,
-                report_id=item.report_id,
-                report_type=item.report_type,
-                path=item.path,
-                dry_run=item.dry_run,
-                total_processed=item.total_processed,
-                total_skipped=item.total_skipped,
-                total_failed=item.total_failed
-            )
-        )
-
-    return indexed_items
+    return history_items
 
 
 # -------------------------------------------------
@@ -333,25 +323,26 @@ def _resolve_report_history_item(
 
         return None
 
-    matching_items = [
-        item
-        for item in history_items
-        if item.report_id == reference
-    ]
+    matching_item = None
 
-    if len(matching_items) == 1:
+    for item in history_items:
 
-        return matching_items[0]
+        if item.report_id != reference:
+            continue
 
-    if len(matching_items) > 1:
+        if matching_item is not None:
 
-        log_warning(
-            f"{REPORT_NOT_FOUND} | "
-            f"reference={reference} "
-            f"reason=ambiguous_report_id"
-        )
+            log_warning(
+                f"{REPORT_NOT_FOUND} | "
+                f"reference={reference} "
+                f"reason=ambiguous_report_id"
+            )
 
-    return None
+            return None
+
+        matching_item = item
+
+    return matching_item
 
 
 # -------------------------------------------------

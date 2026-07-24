@@ -270,6 +270,7 @@ independently from runtime configuration loading.
 - scalable observability for future system expansion
 - consistent failure diagnostics across modules
 - clean separation of concerns between scanning, planning, and execution layers
+- millisecond-precision timestamps
 
 #### Field Naming Consistency
 
@@ -455,7 +456,7 @@ cli/parser.py
 main.py
     │
     ▼
-handlers.py
+handlers/
     │
     ▼
 tasks/cleanup/
@@ -642,7 +643,7 @@ Smart File Organizer is a portfolio-grade automation engine demonstrating:
 
 - Python CLI design
 - Config-driven architecture
-- Safe execution systems
+- Safe and deterministic execution systems
 - Modular design
 - Real-world file system automation
 - Scalable contract-driven software architecture
@@ -655,7 +656,7 @@ Smart File Organizer is a portfolio-grade automation engine demonstrating:
 - Controlled execution (dry-run support)
 - Separation of concerns
 - Contract-first architecture
-- Observable system behavior through structured logs
+Observable and deterministic system behavior through structured logs
 
 ### 🧭 Roadmap
 
@@ -690,7 +691,7 @@ Versions **v0.4.0** and **v0.5.0** were internal development iterations merged i
 * [x] Workflow event taxonomy centralization
 * [x] CLI refinements
 * [x] Manual workflow validation
-* [ ] Final code cleanup
+* [x] Final code cleanup
 * [ ] Performance optimization
 * [ ] Packaging & distribution
 * [ ] Final documentation review
@@ -757,6 +758,15 @@ Versions **v0.4.0** and **v0.5.0** were internal development iterations merged i
 - Validated live rollback end-to-end
 - Completed project-wide compilation validation
 - Synchronized architecture and Composition Root documentation
+- Completed project-wide performance and memory audit
+- Optimized filesystem traversal using os.scandir where appropriate
+- Introduced constant-time extension classification
+- Optimized report history reconstruction
+- Optimized report storage discovery
+- Improved structured logging performance
+- Increased log timestamp precision to milliseconds
+- Reviewed configuration loader performance
+- Reviewed application composition-root performance
 
 ### v0.9.0
 

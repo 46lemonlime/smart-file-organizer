@@ -1,4 +1,4 @@
-# Smart File Organizer (v0.9.0)
+# Smart File Organizer (v1.0.0)
 
 A Python CLI application for deterministic file organization built around a contract-first architecture.
 
@@ -767,18 +767,6 @@ Version numbers follow the **x.y.z** format:
 - **y (minor):** feature and development milestones
 - **z (patch):** bug fixes and small improvements
 
-Versions **v0.4.0** and **v0.5.0** were internal development iterations merged into adjacent releases to maintain a cleaner version history.
-
-#### v0.9.0 — Operational Maturity
-* [x] Reporting subsystem
-* [x] Reporting architecture
-* [x] Configuration-driven report persistence
-* [x] Rollback subsystem
-* [x] Execution traceability
-* [x] Observability improvements
-* [x] CLI & developer experience
-* [x] Report history
-* [x] Report cleanup
 
 #### v1.0.0 — Project Stabilization (latest stable release)
 
@@ -794,8 +782,6 @@ Versions **v0.4.0** and **v0.5.0** were internal development iterations merged i
 * [x] Manual workflow validation
 * [x] Final code cleanup
 * [x] Packaging & distribution (`smartorg` terminal command)
-* [ ] Final documentation review
-* [ ] Stable public release
 
 #### v1.1.0+ — Future Releases
 
@@ -820,6 +806,8 @@ Versions **v0.4.0** and **v0.5.0** were internal development iterations merged i
 ---
 
 ## 7. 📜 Version History
+
+Versions **v0.4.0** and **v0.5.0** were internal development iterations merged into adjacent releases to maintain a cleaner version history.
 
 ### v1.0.0
 

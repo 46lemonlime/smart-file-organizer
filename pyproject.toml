@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "smart-file-organizer"
+version = "1.0.0"
+description = "A contract-first Python CLI for deterministic file organization, reporting, rollback, and execution traceability."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+    { name = "46lemonlime" }
+]
+
+dependencies = [
+    "pyyaml>=6.0",
+]
+
+[project.urls]
+Repository = "https://github.com/46lemonlime/smart-file-organizer"
+
+[project.scripts]
+smartorg = "main:main"
+
+[tool.setuptools]
+py-modules = ["main"]
+
+[tool.setuptools.packages.find]
+include = [
+    "cli*",
+    "core*",
+    "handlers*",
+    "tasks*",
+    "utils*",
+]
+exclude = [
+    "logs*",
+    "reports*",
+]

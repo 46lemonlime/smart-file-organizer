@@ -25,7 +25,8 @@ This module is the single source of truth for configuration
 parsing and validation.
 
 Downstream modules MUST ONLY consume:
-    AppConfig
+    
+    g
 
 They must NOT:
 - parse YAML
@@ -44,7 +45,8 @@ The module ensures:
 FAILURE HANDLING STRATEGY:
 -------------------------------------------------
 If loading or validation fails:
-- system falls back to safe AppConfig
+- system falls back to safe 
+g
 - structured logging is emitted
 - system continues operating safely
 
@@ -60,9 +62,9 @@ DESIGN PRINCIPLES:
 # -------------------------------------------------
 # IMPORTS
 # -------------------------------------------------
-import os
 import yaml
 
+from core.paths import CONFIG_FILE_PATH
 from utils.logger import log_info, log_warning, log_error
 
 from core.events import (
@@ -77,18 +79,6 @@ from core.events import (
 )
 
 from core.contracts import AppConfig, CategoryConfig
-
-
-# -------------------------------------------------
-# CONFIG PATH
-# -------------------------------------------------
-CONFIG_PATH = os.path.abspath(
-    os.path.join(
-        os.path.dirname(__file__),
-        "..",
-        "config.yaml"
-    )
-)
 
 
 # -------------------------------------------------
@@ -112,9 +102,6 @@ def _build_default_config() -> AppConfig:
         dry_run=False,
         ignore_hidden_files=True,
         ignore_symlinks=True,
-        reports_directory="reports",
-        execution_reports_directory="executions",
-        rollback_reports_directory="rollbacks",
         categories={}
     )
 
@@ -147,15 +134,6 @@ def _validate_config(config: dict) -> AppConfig:
     dry_run = config.get("dry_run", False)
     ignore_hidden_files = config.get("ignore_hidden_files", True)
     ignore_symlinks = config.get("ignore_symlinks", True)
-    reports_directory = config.get("reports_directory", "reports")
-    execution_reports_directory = config.get(
-        "execution_reports_directory",
-        "executions"
-    )
-    rollback_reports_directory = config.get(
-        "rollback_reports_directory",
-        "rollbacks"
-    )
 
     # type safety (IMPORTANT)
     if not isinstance(folder_prefix, str):
@@ -197,36 +175,7 @@ def _validate_config(config: dict) -> AppConfig:
         )
 
         ignore_symlinks = True
-
-    if not isinstance(reports_directory, str):
-
-        log_error(
-            f"{CONFIG_INVALID} | "
-            f"key=reports_directory "
-            f"reason=not_string"
-        )
-
-        reports_directory = "reports"
-
-    if not isinstance(execution_reports_directory, str):
-
-        log_error(
-            f"{CONFIG_INVALID} | "
-            f"key=execution_reports_directory "
-            f"reason=not_string"
-        )
-
-        execution_reports_directory = "executions"
-
-    if not isinstance(rollback_reports_directory, str):
-
-        log_error(
-            f"{CONFIG_INVALID} | "
-            f"key=rollback_reports_directory "
-            f"reason=not_string"
-        )
-
-        rollback_reports_directory = "rollbacks"
+    
 
     # -----------------------------
     # CATEGORIES
@@ -313,9 +262,6 @@ def _validate_config(config: dict) -> AppConfig:
             dry_run=dry_run,
             ignore_hidden_files=ignore_hidden_files,
             ignore_symlinks=ignore_symlinks,
-            reports_directory=reports_directory,
-            execution_reports_directory=execution_reports_directory,
-            rollback_reports_directory=rollback_reports_directory,
             categories=categories
         )
 
@@ -338,11 +284,10 @@ def _load_yaml() -> dict | None:
 
         log_info(
             f"{CONFIG_LOAD_START} | "
-            f"path={CONFIG_PATH}"
+            f"path={CONFIG_FILE_PATH}"
         )
 
-        with open(
-            CONFIG_PATH,
+        with CONFIG_FILE_PATH.open(
             "r",
             encoding="utf-8"
         ) as file:
@@ -350,7 +295,7 @@ def _load_yaml() -> dict | None:
 
         log_info(
             f"{CONFIG_LOAD_SUCCESS} | "
-            f"path={CONFIG_PATH}"
+            f"path={CONFIG_FILE_PATH}"
         )
 
         return config
@@ -359,6 +304,7 @@ def _load_yaml() -> dict | None:
 
         log_error(
             f"{CONFIG_LOAD_FAILED} | "
+            f"path={CONFIG_FILE_PATH} "
             f"reason=file_not_found"
         )
 
@@ -396,7 +342,7 @@ def get_config() -> AppConfig:
 
     log_info(
         f"{CONFIG_GET_START} | "
-        f"path={CONFIG_PATH}"
+        f"path={CONFIG_FILE_PATH}"
     )
 
     raw_config = _load_yaml()
@@ -421,7 +367,7 @@ def get_config() -> AppConfig:
 
     log_info(
         f"{CONFIG_GET_COMPLETE} | "
-        f"path={CONFIG_PATH}"
+        f"path={CONFIG_FILE_PATH}"
     )
 
     return _config_cache

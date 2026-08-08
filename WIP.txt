@@ -29,10 +29,35 @@ Implemented:
 - completed remaining high-responsibility module review
 - finalized architecture audit
 
+[x] Application-Owned Paths & Initialization
+- migrated reports_directory, execution_reports_directory,
+  and rollback_reports_directory out of config.yaml and AppConfig
+- established core/paths.py as the single source of truth for
+  all application-owned filesystem paths
+- relocated all persistent application data under ~/smartorg/
+- removed manual path injection from main.py into handlers
+- migrated handlers.move, handlers.rollback, handlers.cleanup,
+  and handlers.report to receive functional arguments only
+- migrated tasks.reporting.saver, loader, and history to operate
+  on explicit Path arguments sourced from core.paths
+- migrated tasks.cleanup.cleaner to core.paths-owned constants
+- migrated tasks.reporting.storage from os.path to pathlib
+  (read_report_data, get_report_id_from_path, get_report_files,
+  get_latest_report_path)
+- removed dead code (build_reports_directory)
+- introduced tasks/bootstrap subsystem
+  (initializer.py, verifier.py)
+- introduced smartorg init command
+  (idempotent: safe to re-run on an existing installation)
+- introduced centralized initialization guard in main.py
+  (non-init commands require an initialized application directory)
+- added INIT_START / INIT_COMPLETE / INIT_SKIPPED events
+
 [x] CLI Improvements
 - added scoped report history filtering
 - reviewed CLI consistency
 - improved command ergonomics
+- added init command to the CLI
 - validated move command help interface
 - validated report command workflow
 - validated rollback command workflow
@@ -45,6 +70,20 @@ Implemented:
 - reviewed comments and docstrings in critical workflow modules
 - validated project compilation with compileall
 
+[x] Bug Fixes (found during end-to-end verification)
+- fixed handlers.move calling save_report with the obsolete
+  3-argument signature (report, REPORTS_DIRECTORY,
+  EXECUTION_REPORTS_DIRECTORY) after saver.py had already been
+  migrated to a single destination_directory argument
+- fixed ReportHistoryItem.path being typed and validated as str
+  while tasks.reporting.storage already supplied Path instances,
+  causing report history construction to fail silently
+  (errors were caught and logged per-item in history.py, so
+  `report list` reported "No reports found" despite valid
+  persisted reports)
+- added validate_path_type to core/contracts/validation.py to
+  support the corrected ReportHistoryItem contract
+
 [x] Manual Testing & Stabilization
 - validated missing execution source handling
 - validated prevention of unnecessary destination folder creation
@@ -56,6 +95,10 @@ Implemented:
 - validated live move end-to-end workflow
 - validated persisted report loading
 - validated live rollback end-to-end workflow
+- validated report list, latest report, and report-by-index
+  against real persisted data
+- validated cleanup report (by index), cleanup log, and
+  cleanup all against real persisted data
 - completed behavioral consistency audit for critical workflows
 
 [x] Performance & Memory Audit
@@ -75,6 +118,7 @@ Implemented:
 - optimized report history reindexing by reusing existing history items
 - optimized report history resolution with a single-pass ambiguity check
 - optimized report storage discovery with os.scandir
+  (superseded by the pathlib migration above; behavior preserved)
 - optimized latest-report resolution to use constant auxiliary memory
 - reviewed reporting generator, reporter, saver, loader, and deserializer performance
   (no changes required)
@@ -89,15 +133,18 @@ Implemented:
 - confirmed linear scalability across primary collection-processing workflows
 - verified that performance optimizations preserve current behavior and architecture
 
-Planned Before v1.0.0:
+[x] Packaging & Distribution
+- packaged the project as an installable Python application
+  (pyproject.toml, flat layout)
+- exposed the `smartorg` terminal command via [project.scripts]
+- configured pyyaml as the sole runtime dependency
+- added LICENSE (MIT)
+- updated requirements.txt to reflect the pyyaml dependency
+- verified installation in a clean, isolated virtual environment
+  (pip install ., smartorg init, smartorg move, smartorg report,
+  smartorg rollback, smartorg cleanup — all validated post-install)
 
-[ ] Packaging & Distribution
-- package project as an installable Python application
-- expose the `smartorg` terminal command
-- configure CLI entry point
-- prepare pyproject.toml metadata
-- verify installation in a clean environment
-- document installation and upgrade process
+Planned Before v1.0.0:
 
 [ ] Performance Validation
 - benchmark representative large directories
@@ -110,6 +157,7 @@ Planned Before v1.0.0:
 [ ] Documentation
 - finalize architecture documentation
 - review project structure
+- document the smartorg init command and application-owned paths
 - document current rollback scope
 - document known limitations
 - add end-to-end usage examples

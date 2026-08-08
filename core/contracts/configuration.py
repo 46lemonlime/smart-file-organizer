@@ -92,9 +92,6 @@ class AppConfig:
     dry_run: bool
     ignore_hidden_files: bool
     ignore_symlinks: bool
-    reports_directory: str
-    execution_reports_directory: str
-    rollback_reports_directory: str
     categories: dict[str, CategoryConfig]
 
     def __post_init__(self):
@@ -122,21 +119,6 @@ class AppConfig:
         validate_dict_type(
             self.categories,
             "categories"
-        )
-
-        validate_non_empty_string(
-            self.reports_directory,
-            "reports_directory"
-        )
-
-        validate_non_empty_string(
-            self.execution_reports_directory,
-            "execution_reports_directory"
-        )
-
-        validate_non_empty_string(
-            self.rollback_reports_directory,
-            "rollback_reports_directory"
         )
 
         for category_name, category_config in self.categories.items():

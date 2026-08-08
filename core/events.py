@@ -40,6 +40,7 @@ EVENT ORGANIZATION:
 Events are grouped following the application's architecture:
 
 application lifecycle
+→ initialization
 → configuration
 → CLI and execution context
 → discovery
@@ -65,6 +66,14 @@ CLEANUP_COMPLETE = "cleanup_complete"
 # -------------------------------------------------
 APP_START = "app_start"
 APP_COMPLETE = "app_complete"
+
+
+# -------------------------------------------------
+# INITIALIZATION WORKFLOW EVENTS
+# -------------------------------------------------
+INIT_START = "init_start"
+INIT_COMPLETE = "init_complete"
+INIT_SKIPPED = "init_skipped"
 
 
 # -------------------------------------------------

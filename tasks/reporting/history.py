@@ -63,23 +63,24 @@ must never reindex the resulting items.
 # -------------------------------------------------
 # IMPORTS
 # -------------------------------------------------
+from pathlib import Path
+
 from core.contracts import ReportHistoryItem
 
 from core.events import (
     REPORT_LOAD_FAILED,
-    REPORT_NOT_FOUND
+    REPORT_NOT_FOUND,
 )
 
 from tasks.reporting.storage import (
-    build_reports_directory,
     get_report_files,
     get_report_id_from_path,
-    read_report_data
+    read_report_data,
 )
 
 from utils.logger import (
     log_error,
-    log_warning
+    log_warning,
 )
 
 
@@ -94,8 +95,8 @@ REPORT_TYPE_ROLLBACK = "rollback"
 # PRIVATE: Build execution history item
 # -------------------------------------------------
 def _build_execution_history_item(
-    report_path: str,
-    index: int
+    report_path: Path,
+    index: int,
 ) -> ReportHistoryItem:
     """
     Builds report history metadata from an execution report.
@@ -103,14 +104,14 @@ def _build_execution_history_item(
     Execution skipped totals combine discovery-stage and
     planning-stage skipped items.
 
-    ARGS:
+    Args:
         report_path:
             Path to the persisted execution report.
 
         index:
             Temporary or final history index.
 
-    RETURNS:
+    Returns:
         ReportHistoryItem
     """
 
@@ -120,7 +121,7 @@ def _build_execution_history_item(
 
     mover_data = report_data.get(
         "mover",
-        report_data.get("execution")
+        report_data.get("execution"),
     )
 
     discovery_data = report_data["discovery"]
@@ -141,7 +142,7 @@ def _build_execution_history_item(
         dry_run=mover_data["dry_run"],
         total_processed=mover_data["total_processed"],
         total_skipped=total_skipped,
-        total_failed=mover_data["total_failed"]
+        total_failed=mover_data["total_failed"],
     )
 
 
@@ -149,8 +150,8 @@ def _build_execution_history_item(
 # PRIVATE: Build rollback history item
 # -------------------------------------------------
 def _build_rollback_history_item(
-    report_path: str,
-    index: int
+    report_path: Path,
+    index: int,
 ) -> ReportHistoryItem:
     """
     Builds report history metadata from a rollback report.
@@ -158,14 +159,14 @@ def _build_rollback_history_item(
     Rollback reports do not currently persist rollback-planning
     skipped operations. Therefore, total_skipped remains zero.
 
-    ARGS:
+    Args:
         report_path:
             Path to the persisted rollback report.
 
         index:
             Temporary or final history index.
 
-    RETURNS:
+    Returns:
         ReportHistoryItem
     """
 
@@ -183,7 +184,7 @@ def _build_rollback_history_item(
         dry_run=report_data["dry_run"],
         total_processed=report_data["total_processed"],
         total_skipped=0,
-        total_failed=report_data["total_failed"]
+        total_failed=report_data["total_failed"],
     )
 
 
@@ -191,7 +192,7 @@ def _build_rollback_history_item(
 # PRIVATE: Reindex report history
 # -------------------------------------------------
 def _reindex_report_history(
-    history_items: list[ReportHistoryItem]
+    history_items: list[ReportHistoryItem],
 ) -> list[ReportHistoryItem]:
     """
     Assigns stable one-based indexes to existing history items.
@@ -203,13 +204,13 @@ def _reindex_report_history(
     rebuilding the full history list and allocating duplicate
     ReportHistoryItem objects.
 
-    RETURNS:
+    Returns:
         list[ReportHistoryItem]
     """
 
     for index, item in enumerate(
         history_items,
-        start=1
+        start=1,
     ):
         item.index = index
 
@@ -221,7 +222,7 @@ def _reindex_report_history(
 # -------------------------------------------------
 def _append_execution_history(
     history_items: list[ReportHistoryItem],
-    report_files: list[str]
+    report_files: list[Path],
 ) -> None:
     """
     Builds and appends execution history entries.
@@ -238,7 +239,7 @@ def _append_execution_history(
             history_items.append(
                 _build_execution_history_item(
                     report_path,
-                    index=0
+                    index=0,
                 )
             )
 
@@ -248,7 +249,7 @@ def _append_execution_history(
                 f"{REPORT_LOAD_FAILED} | "
                 f"path={report_path} "
                 f"reason=execution_history_build_failed",
-                error=error
+                error=error,
             )
 
 
@@ -257,7 +258,7 @@ def _append_execution_history(
 # -------------------------------------------------
 def _append_rollback_history(
     history_items: list[ReportHistoryItem],
-    report_files: list[str]
+    report_files: list[Path],
 ) -> None:
     """
     Builds and appends rollback history entries.
@@ -274,7 +275,7 @@ def _append_rollback_history(
             history_items.append(
                 _build_rollback_history_item(
                     report_path,
-                    index=0
+                    index=0,
                 )
             )
 
@@ -284,7 +285,7 @@ def _append_rollback_history(
                 f"{REPORT_LOAD_FAILED} | "
                 f"path={report_path} "
                 f"reason=rollback_history_build_failed",
-                error=error
+                error=error,
             )
 
 
@@ -293,7 +294,7 @@ def _append_rollback_history(
 # -------------------------------------------------
 def _resolve_report_history_item(
     reference: str,
-    history_items: list[ReportHistoryItem]
+    history_items: list[ReportHistoryItem],
 ) -> ReportHistoryItem | None:
     """
     Resolves a history entry by global index or identifier.
@@ -307,7 +308,7 @@ def _resolve_report_history_item(
     If an identifier matches multiple reports, the reference
     is considered ambiguous and cannot be resolved.
 
-    RETURNS:
+    Returns:
         ReportHistoryItem | None
     """
 
@@ -349,9 +350,8 @@ def _resolve_report_history_item(
 # PUBLIC: List report history
 # -------------------------------------------------
 def list_report_history(
-    reports_directory: str,
-    execution_reports_directory: str,
-    rollback_reports_directory: str
+    execution_reports_directory: Path,
+    rollback_reports_directory: Path,
 ) -> list[ReportHistoryItem]:
     """
     Builds unified chronological report history.
@@ -359,7 +359,7 @@ def list_report_history(
     Execution and rollback reports are normalized into a
     shared ReportHistoryItem contract.
 
-    ORDER GUARANTEES:
+    Order guarantees:
     - execution and rollback reports are combined
     - report type does not affect sorting
     - reports are sorted by report identifier
@@ -367,7 +367,7 @@ def list_report_history(
     - one-based indexes are assigned after sorting
     - indexes represent positions in unified global history
 
-    RETURNS:
+    Returns:
         list[ReportHistoryItem]
 
     IMPORTANT:
@@ -375,39 +375,29 @@ def list_report_history(
     the indexes assigned here.
     """
 
-    execution_reports_path = build_reports_directory(
-        reports_directory,
+    execution_files = get_report_files(
         execution_reports_directory
     )
 
-    rollback_reports_path = build_reports_directory(
-        reports_directory,
+    rollback_files = get_report_files(
         rollback_reports_directory
     )
 
-    execution_files = get_report_files(
-        execution_reports_path
-    )
-
-    rollback_files = get_report_files(
-        rollback_reports_path
-    )
-
-    history_items = []
+    history_items: list[ReportHistoryItem] = []
 
     _append_execution_history(
         history_items,
-        execution_files
+        execution_files,
     )
 
     _append_rollback_history(
         history_items,
-        rollback_files
+        rollback_files,
     )
 
     history_items.sort(
         key=lambda item: item.report_id,
-        reverse=True
+        reverse=True,
     )
 
     return _reindex_report_history(
@@ -420,9 +410,8 @@ def list_report_history(
 # -------------------------------------------------
 def find_report_history_item(
     reference: str,
-    reports_directory: str,
-    execution_reports_directory: str,
-    rollback_reports_directory: str
+    execution_reports_directory: Path,
+    rollback_reports_directory: Path,
 ) -> ReportHistoryItem | None:
     """
     Finds report history metadata by global index or report
@@ -436,19 +425,18 @@ def find_report_history_item(
     This function resolves history metadata only. It does not
     rebuild the complete execution or rollback report.
 
-    RETURNS:
+    Returns:
         ReportHistoryItem | None
     """
 
     history_items = list_report_history(
-        reports_directory,
         execution_reports_directory,
-        rollback_reports_directory
+        rollback_reports_directory,
     )
 
     history_item = _resolve_report_history_item(
         reference,
-        history_items
+        history_items,
     )
 
     if history_item is None:

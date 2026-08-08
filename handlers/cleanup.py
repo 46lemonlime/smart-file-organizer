@@ -28,7 +28,7 @@ cleanup command
 
 Design Principles:
 - application-level orchestration
-- explicit dependency injection
+- centralized application paths
 - deterministic workflow coordination
 - subsystem ownership preservation
 - minimal business logic
@@ -41,12 +41,14 @@ It does NOT:
 - clear logs directly
 - resolve report history internally
 - render report contracts
-- own persistence paths
+- determine persistence locations
 """
 
 # -------------------------------------------------
 # IMPORTS
 # -------------------------------------------------
+from pathlib import Path
+
 from core.events import (
     CLEANUP_COMPLETE,
     CLEANUP_SKIPPED,
@@ -73,7 +75,7 @@ from utils.logger import log_error, log_info
 REPORT_DELETION_SCOPES = {
     "executions",
     "rollbacks",
-    "all"
+    "all",
 }
 
 
@@ -81,13 +83,9 @@ REPORT_DELETION_SCOPES = {
 # PUBLIC: Cleanup handler
 # -------------------------------------------------
 def handle_cleanup(
-    reports_directory: str,
-    execution_reports_directory: str,
-    rollback_reports_directory: str,
-    logs_directory: str,
-    log_filename: str,
+    log_file_path: Path,
     cleanup_resource: str,
-    cleanup_target: str | None
+    cleanup_target: str | None,
 ) -> None:
     """
     Routes persistence cleanup workflows.
@@ -113,10 +111,7 @@ def handle_cleanup(
     if cleanup_resource == "report":
 
         _handle_report_cleanup(
-            cleanup_target,
-            reports_directory,
-            execution_reports_directory,
-            rollback_reports_directory
+            cleanup_target
         )
 
         return
@@ -124,8 +119,7 @@ def handle_cleanup(
     if cleanup_resource == "log":
 
         _handle_log_cleanup(
-            logs_directory,
-            log_filename
+            log_file_path
         )
 
         return
@@ -133,11 +127,7 @@ def handle_cleanup(
     if cleanup_resource == "all":
 
         _handle_full_cleanup(
-            reports_directory,
-            execution_reports_directory,
-            rollback_reports_directory,
-            logs_directory,
-            log_filename
+            log_file_path
         )
 
         return
@@ -154,9 +144,6 @@ def handle_cleanup(
 # -------------------------------------------------
 def _handle_report_cleanup(
     target: str | None,
-    reports_directory: str,
-    execution_reports_directory: str,
-    rollback_reports_directory: str
 ) -> None:
     """
     Routes individual and scoped report cleanup workflows.
@@ -174,19 +161,13 @@ def _handle_report_cleanup(
     if target in REPORT_DELETION_SCOPES:
 
         _handle_scoped_report_cleanup(
-            target,
-            reports_directory,
-            execution_reports_directory,
-            rollback_reports_directory
+            target
         )
 
         return
 
     _handle_single_report_cleanup(
-        target,
-        reports_directory,
-        execution_reports_directory,
-        rollback_reports_directory
+        target
     )
 
 
@@ -194,16 +175,14 @@ def _handle_report_cleanup(
 # PRIVATE: Handle application log cleanup
 # -------------------------------------------------
 def _handle_log_cleanup(
-    logs_directory: str,
-    log_filename: str
+    log_file_path: Path,
 ) -> None:
     """
     Clears the persisted application log file.
     """
 
     logs_cleared = clear_application_logs(
-        logs_directory,
-        log_filename
+        log_file_path
     )
 
     if not logs_cleared:
@@ -219,8 +198,7 @@ def _handle_log_cleanup(
         return
 
     _render_cleared_application_logs(
-        logs_directory,
-        log_filename
+        log_file_path
     )
 
     log_info(
@@ -228,45 +206,35 @@ def _handle_log_cleanup(
         f"resource=log"
     )
 
-
 # -------------------------------------------------
 # PRIVATE: Handle full persistence cleanup
 # -------------------------------------------------
 def _handle_full_cleanup(
-    reports_directory: str,
-    execution_reports_directory: str,
-    rollback_reports_directory: str,
-    logs_directory: str,
-    log_filename: str
+    log_file_path: Path,
 ) -> None:
     """
     Deletes all persisted reports and clears application logs.
     """
 
     deleted_items = delete_reports_by_scope(
-        "all",
-        reports_directory,
-        execution_reports_directory,
-        rollback_reports_directory
+        "all"
     )
 
     logs_cleared = clear_application_logs(
-        logs_directory,
-        log_filename
+        log_file_path
     )
 
     if deleted_items:
 
         render_deleted_reports(
             deleted_items,
-            "all"
+            "all",
         )
 
     if logs_cleared:
 
         _render_cleared_application_logs(
-            logs_directory,
-            log_filename
+            log_file_path
         )
 
     if not deleted_items and not logs_cleared:
@@ -294,19 +262,13 @@ def _handle_full_cleanup(
 # -------------------------------------------------
 def _handle_scoped_report_cleanup(
     scope: str,
-    reports_directory: str,
-    execution_reports_directory: str,
-    rollback_reports_directory: str
 ) -> None:
     """
     Deletes persisted reports matching a supported scope.
     """
 
     deleted_items = delete_reports_by_scope(
-        scope,
-        reports_directory,
-        execution_reports_directory,
-        rollback_reports_directory
+        scope
     )
 
     if not deleted_items:
@@ -326,7 +288,7 @@ def _handle_scoped_report_cleanup(
 
     render_deleted_reports(
         deleted_items,
-        scope
+        scope,
     )
 
     log_info(
@@ -342,19 +304,13 @@ def _handle_scoped_report_cleanup(
 # -------------------------------------------------
 def _handle_single_report_cleanup(
     reference: str,
-    reports_directory: str,
-    execution_reports_directory: str,
-    rollback_reports_directory: str
 ) -> None:
     """
     Deletes one persisted report by index or identifier.
     """
 
     deleted_item = delete_report_by_reference(
-        reference,
-        reports_directory,
-        execution_reports_directory,
-        rollback_reports_directory
+        reference
     )
 
     if deleted_item is None:
@@ -420,8 +376,7 @@ def _render_missing_application_logs() -> None:
 # PRIVATE: Render cleared application logs
 # -------------------------------------------------
 def _render_cleared_application_logs(
-    logs_directory: str,
-    log_filename: str
+    log_file_path: Path,
 ) -> None:
     """
     Renders application log cleanup confirmation.
@@ -432,7 +387,7 @@ def _render_cleared_application_logs(
     print("------------")
     print()
     print(
-        f"File: {logs_directory}/{log_filename}"
+        f"File: {log_file_path}"
     )
     print()
 
@@ -441,7 +396,7 @@ def _render_cleared_application_logs(
 # PRIVATE: Render empty report cleanup
 # -------------------------------------------------
 def _render_empty_report_cleanup(
-    scope: str
+    scope: str,
 ) -> None:
     """
     Renders feedback when no reports match a cleanup scope.

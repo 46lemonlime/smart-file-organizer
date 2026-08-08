@@ -53,9 +53,8 @@ Dependencies:
 - history.py owns report history and reference resolution
 - deserializer.py owns contract reconstruction
 
-Configuration:
-Report locations are injected by the application's
-composition root.
+Report directories are supplied by the caller as resolved
+filesystem paths.
 
 Design Principles:
 - workflow coordination only
@@ -84,40 +83,41 @@ It does NOT:
 # -------------------------------------------------
 # IMPORTS
 # -------------------------------------------------
+from pathlib import Path
+
 from core.contracts import (
     ExecutionReport,
     ReportHistoryItem,
-    RollbackReport
+    RollbackReport,
 )
 
 from core.events import (
     REPORT_LOAD_COMPLETE,
     REPORT_LOAD_FAILED,
     REPORT_LOAD_START,
-    REPORT_NOT_FOUND
+    REPORT_NOT_FOUND,
 )
 
 from tasks.reporting.deserializer import (
     build_execution_report,
-    build_rollback_report
+    build_rollback_report,
 )
 
 from tasks.reporting.history import (
     REPORT_TYPE_EXECUTION,
     REPORT_TYPE_ROLLBACK,
-    find_report_history_item
+    find_report_history_item,
 )
 
 from tasks.reporting.storage import (
-    build_reports_directory,
     get_latest_report_path,
-    read_report_data
+    read_report_data,
 )
 
 from utils.logger import (
     log_error,
     log_info,
-    log_warning
+    log_warning,
 )
 
 
@@ -125,24 +125,11 @@ from utils.logger import (
 # PRIVATE: Load report from history item
 # -------------------------------------------------
 def _load_report_from_history_item(
-    history_item: ReportHistoryItem
+    history_item: ReportHistoryItem,
 ) -> ExecutionReport | RollbackReport:
     """
     Loads and rebuilds the report represented by a history
     item.
-
-    The history item determines:
-    - the persisted report path
-    - the report type
-    - the deserializer to use
-
-    RETURNS:
-        ExecutionReport | RollbackReport
-
-    RAISES:
-        ValueError:
-            If the history item contains an unsupported report
-            type.
     """
 
     report_data = read_report_data(
@@ -171,32 +158,24 @@ def _load_report_from_history_item(
 # PRIVATE: Load latest report data
 # -------------------------------------------------
 def _load_latest_report_data(
-    reports_path: str
-) -> tuple[str, dict] | None:
+    reports_directory: Path,
+) -> tuple[Path, dict] | None:
     """
     Locates and reads the latest persisted report.
 
-    Latest-report selection is delegated to storage.py so all
-    reporting workflows use the same deterministic report
-    identifier ordering.
-
-    RETURNS:
-        tuple[str, dict] | None
-
-        The tuple contains:
-        - latest report path
-        - deserialized report data
+    Returns:
+        tuple[Path, dict] | None
     """
 
     latest_report_path = get_latest_report_path(
-        reports_path
+        reports_directory
     )
 
     if latest_report_path is None:
 
         log_warning(
             f"{REPORT_NOT_FOUND} | "
-            f"path={reports_path}"
+            f"path={reports_directory}"
         )
 
         return None
@@ -207,7 +186,7 @@ def _load_latest_report_data(
 
     return (
         latest_report_path,
-        report_data
+        report_data,
     )
 
 
@@ -216,30 +195,12 @@ def _load_latest_report_data(
 # -------------------------------------------------
 def load_report_by_reference(
     reference: str,
-    reports_directory: str,
-    execution_reports_directory: str,
-    rollback_reports_directory: str
+    execution_reports_directory: Path,
+    rollback_reports_directory: Path,
 ) -> ExecutionReport | RollbackReport | None:
     """
     Loads a persisted report by global history index or report
     identifier.
-
-    Supported references:
-        "1"
-        "2"
-        "20260708T205244"
-
-    The reference is resolved against unified execution and
-    rollback report history.
-
-    RETURNS:
-        ExecutionReport | RollbackReport | None
-
-    IMPORTANT:
-    Numeric references represent stable global history indexes.
-
-    Identifier references must match exactly one report.
-    Ambiguous or unknown references return None.
     """
 
     log_info(
@@ -249,9 +210,8 @@ def load_report_by_reference(
 
     history_item = find_report_history_item(
         reference,
-        reports_directory,
         execution_reports_directory,
-        rollback_reports_directory
+        rollback_reports_directory,
     )
 
     if history_item is None:
@@ -280,7 +240,7 @@ def load_report_by_reference(
             f"path={history_item.path} "
             f"reference={reference} "
             f"report_type={history_item.report_type}",
-            error=error
+            error=error,
         )
 
         raise
@@ -290,39 +250,22 @@ def load_report_by_reference(
 # PUBLIC: Load latest execution report
 # -------------------------------------------------
 def load_latest_execution_report(
-    reports_directory: str,
-    execution_reports_directory: str
+    execution_reports_directory: Path,
 ) -> ExecutionReport | None:
     """
     Loads the latest saved execution report.
-
-    Latest selection is based on the report identifier encoded
-    in the report filename, not on filesystem modification
-    time.
-
-    RETURNS:
-        ExecutionReport | None
-
-    IMPORTANT:
-    This function does not render, save, generate, or mutate
-    reports.
     """
-
-    execution_reports_path = build_reports_directory(
-        reports_directory,
-        execution_reports_directory
-    )
 
     log_info(
         f"{REPORT_LOAD_START} | "
         f"report_type={REPORT_TYPE_EXECUTION} "
-        f"path={execution_reports_path}"
+        f"path={execution_reports_directory}"
     )
 
     try:
 
         latest_report = _load_latest_report_data(
-            execution_reports_path
+            execution_reports_directory
         )
 
         if latest_report is None:
@@ -348,8 +291,8 @@ def load_latest_execution_report(
         log_error(
             f"{REPORT_LOAD_FAILED} | "
             f"report_type={REPORT_TYPE_EXECUTION} "
-            f"path={execution_reports_path}",
-            error=error
+            f"path={execution_reports_directory}",
+            error=error,
         )
 
         raise
@@ -359,39 +302,22 @@ def load_latest_execution_report(
 # PUBLIC: Load latest rollback report
 # -------------------------------------------------
 def load_latest_rollback_report(
-    reports_directory: str,
-    rollback_reports_directory: str
+    rollback_reports_directory: Path,
 ) -> RollbackReport | None:
     """
     Loads the latest saved rollback report.
-
-    Latest selection is based on the report identifier encoded
-    in the report filename, not on filesystem modification
-    time.
-
-    RETURNS:
-        RollbackReport | None
-
-    IMPORTANT:
-    This function does not render, save, generate, or mutate
-    reports.
     """
-
-    rollback_reports_path = build_reports_directory(
-        reports_directory,
-        rollback_reports_directory
-    )
 
     log_info(
         f"{REPORT_LOAD_START} | "
         f"report_type={REPORT_TYPE_ROLLBACK} "
-        f"path={rollback_reports_path}"
+        f"path={rollback_reports_directory}"
     )
 
     try:
 
         latest_report = _load_latest_report_data(
-            rollback_reports_path
+            rollback_reports_directory
         )
 
         if latest_report is None:
@@ -417,8 +343,8 @@ def load_latest_rollback_report(
         log_error(
             f"{REPORT_LOAD_FAILED} | "
             f"report_type={REPORT_TYPE_ROLLBACK} "
-            f"path={rollback_reports_path}",
-            error=error
+            f"path={rollback_reports_directory}",
+            error=error,
         )
 
         raise

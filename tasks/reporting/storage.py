@@ -8,7 +8,6 @@ This module provides shared read-only persistence helpers for
 saved application reports.
 
 Responsibilities:
-- Build report directory paths
 - Locate persisted JSON report files
 - Read and decode report JSON data
 - Extract report identifiers from filenames
@@ -65,42 +64,14 @@ consistent with unified report history ordering.
 # IMPORTS
 # -------------------------------------------------
 import json
-import os
-
-
-# -------------------------------------------------
-# PUBLIC: Build reports directory
-# -------------------------------------------------
-def build_reports_directory(
-    reports_directory: str,
-    report_subdirectory: str
-) -> str:
-    """
-    Builds the path of a report subdirectory.
-
-    ARGS:
-        reports_directory:
-            Root directory containing persisted reports.
-
-        report_subdirectory:
-            Execution, rollback, or another report
-            subdirectory.
-
-    RETURNS:
-        str
-    """
-
-    return os.path.join(
-        reports_directory,
-        report_subdirectory
-    )
+from pathlib import Path
 
 
 # -------------------------------------------------
 # PUBLIC: Read report data
 # -------------------------------------------------
 def read_report_data(
-    report_path: str
+    report_path: Path
 ) -> dict:
     """
     Reads and decodes persisted report JSON data.
@@ -120,8 +91,7 @@ def read_report_data(
             If the report does not contain valid JSON.
     """
 
-    with open(
-        report_path,
+    with report_path.open(
         "r",
         encoding="utf-8"
     ) as file:
@@ -133,7 +103,7 @@ def read_report_data(
 # PUBLIC: Get report identifier from path
 # -------------------------------------------------
 def get_report_id_from_path(
-    report_path: str
+    report_path: Path
 ) -> str:
     """
     Extracts a report identifier from its filename.
@@ -152,23 +122,15 @@ def get_report_id_from_path(
         str
     """
 
-    filename = os.path.basename(
-        report_path
-    )
-
-    report_id, _ = os.path.splitext(
-        filename
-    )
-
-    return report_id
+    return report_path.stem
 
 
 # -------------------------------------------------
 # PUBLIC: Get report files
 # -------------------------------------------------
 def get_report_files(
-    reports_path: str
-) -> list[str]:
+    reports_path: Path
+) -> list[Path]:
     """
     Returns persisted JSON report paths from a directory.
 
@@ -182,7 +144,7 @@ def get_report_files(
             Directory containing persisted reports.
 
     RETURNS:
-        list[str]
+        list[Path]
 
     IMPORTANT:
     This function does not impose chronological ordering.
@@ -194,18 +156,16 @@ def get_report_files(
 
     try:
 
-        with os.scandir(reports_path) as entries:
+        for entry in reports_path.iterdir():
 
-            for entry in entries:
+            if (
+                entry.suffix == ".json"
+                and entry.is_file()
+            ):
 
-                if (
-                    entry.name.endswith(".json")
-                    and entry.is_file()
-                ):
-
-                    report_files.append(
-                        entry.path
-                    )
+                report_files.append(
+                    entry
+                )
 
     except (FileNotFoundError, NotADirectoryError):
 
@@ -218,8 +178,8 @@ def get_report_files(
 # PUBLIC: Get latest report path
 # -------------------------------------------------
 def get_latest_report_path(
-    reports_path: str
-) -> str | None:
+    reports_path: Path
+) -> Path | None:
     """
     Returns the latest persisted report path.
 
@@ -234,7 +194,7 @@ def get_latest_report_path(
             Directory containing persisted reports.
 
     RETURNS:
-        str | None
+        Path | None
 
         None is returned when the directory does not contain
         report files.
@@ -252,27 +212,25 @@ def get_latest_report_path(
 
     try:
 
-        with os.scandir(reports_path) as entries:
+        for entry in reports_path.iterdir():
 
-            for entry in entries:
+            if (
+                entry.suffix != ".json"
+                or not entry.is_file()
+            ):
+                continue
 
-                if (
-                    not entry.name.endswith(".json")
-                    or not entry.is_file()
-                ):
-                    continue
+            report_id = get_report_id_from_path(
+                entry
+            )
 
-                report_id = get_report_id_from_path(
-                    entry.name
-                )
+            if (
+                latest_report_id is None
+                or report_id > latest_report_id
+            ):
 
-                if (
-                    latest_report_id is None
-                    or report_id > latest_report_id
-                ):
-
-                    latest_report_id = report_id
-                    latest_report_path = entry.path
+                latest_report_id = report_id
+                latest_report_path = entry
 
     except (FileNotFoundError, NotADirectoryError):
 

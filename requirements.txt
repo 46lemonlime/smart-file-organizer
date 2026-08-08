@@ -1,3 +1,3 @@
 # Smart File Organizer
-# No external dependencies required
-# Built using Python standard library only
+# Runtime dependencies (see pyproject.toml for full packaging metadata)
+pyyaml>=6.0

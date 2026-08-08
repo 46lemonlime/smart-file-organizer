@@ -16,6 +16,7 @@ Responsibilities:
 Architecture Role:
 This module intentionally contains NO logic related to:
 - configuration loading
+- application directory initialization
 - filesystem discovery
 - execution planning
 - filesystem mutations
@@ -39,6 +40,7 @@ terminal input
 → parsed execution arguments
 
 Supported Commands:
+- init
 - move
 - report
 - rollback
@@ -80,6 +82,7 @@ This module only parses command-line arguments.
 
 It does NOT:
 - execute application logic
+- create application directories
 - resolve report references
 - filter report history
 - determine report cleanup scope
@@ -117,6 +120,14 @@ def parse_args() -> argparse.Namespace:
         dest="task",
         required=True,
         metavar="command"
+    )
+
+    # -------------------------------------------------
+    # INIT COMMAND
+    # -------------------------------------------------
+    subparsers.add_parser(
+        "init",
+        help="Initialize the SmartOrg application directory."
     )
 
     # -------------------------------------------------

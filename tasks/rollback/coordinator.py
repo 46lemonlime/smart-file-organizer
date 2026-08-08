@@ -66,13 +66,13 @@ Failure Contract:
 # -------------------------------------------------
 # IMPORTS
 # -------------------------------------------------
-from core.contracts import (
-    RollbackReport
-)
+from pathlib import Path
+
+from core.contracts import RollbackReport
 
 from tasks.reporting.loader import load_latest_execution_report
-from tasks.rollback.planner import build_rollback_plan
 from tasks.rollback.executor import execute_rollback_plan
+from tasks.rollback.planner import build_rollback_plan
 
 from utils.logger import log_info, log_warning
 
@@ -81,14 +81,13 @@ from utils.logger import log_info, log_warning
 # PUBLIC: Rollback latest execution
 # -------------------------------------------------
 def rollback_latest_execution(
-    reports_directory: str,
-    execution_reports_directory: str,
+    execution_reports_directory: Path,
     dry_run: bool
 ) -> RollbackReport | None:
     """
     Executes rollback workflow for the latest persisted execution report.
 
-    RETURNS:
+    Returns:
         RollbackReport | None
 
     IMPORTANT:
@@ -106,7 +105,6 @@ def rollback_latest_execution(
     # STEP 1: LOAD LATEST EXECUTION REPORT
     # -------------------------------------------------
     execution_report = load_latest_execution_report(
-        reports_directory,
         execution_reports_directory
     )
 

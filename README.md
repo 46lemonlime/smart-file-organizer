@@ -6,39 +6,43 @@ It automates file management workflows such as file sorting, dry-run simulation,
 
 ## 🚀 Quick Start
 
-**Organize files**
+Get up and running in three steps.
+
+**1. Clone and install**
 
 ```bash
-python3 main.py move ~/Downloads
+git clone https://github.com/46lemonlime/smart-file-organizer.git
+cd smart-file-organizer
+pip install .
 ```
 
-**Rollback latest execution**
+**2. Initialize**
+
+Creates the application directory, default configuration, and report storage under `~/smartorg/`.
 
 ```bash
-python3 main.py rollback
+smartorg init
 ```
 
-**Safe simulation**
+**3. Organize a directory**
+
+Preview the changes first with a dry-run, then run it for real.
 
 ```bash
-python3 main.py move ~/Downloads --dry-run
-python3 main.py rollback --dry-run
+smartorg move ~/Downloads --dry-run
+smartorg move ~/Downloads
 ```
 
-**Browse report history**
+Made a mistake, or just want to undo the last run?
 
 ```bash
-python3 main.py report list
-python3 main.py report list executions
-python3 main.py report list rollbacks
+smartorg rollback
 ```
 
-**View a report**
+**Requirements:** Python 3.10+
 
-```bash
-python3 main.py report
-python3 main.py report 3
-```
+For the full command reference (report history, cleanup, scoped filters, and more), see [Usage & Execution](#4--usage--execution).
+
 ---
 
 ## 1. 🧠 Project Overview
@@ -63,7 +67,7 @@ executions.
 
 
 The system prioritizes transparency, control, and reproducibility over raw automation speed.
-```
+```md
 Filesystem
       │
       ▼
@@ -85,10 +89,16 @@ Mover
 
 ## 2. ✨ Features
 - Command-line interface with dedicated commands
+   - init
    - move
    - rollback
    - report
    - cleanup
+
+- Application initialization
+   - application-owned directory structure under `~/smartorg/`
+   - idempotent initialization
+   - default configuration generation
 
 - Config-driven behavior
    - YAML-based configuration
@@ -131,6 +141,10 @@ Mover
    - execution summaries
    - end-to-end pipeline traceability
 
+- Packaging
+   - installable Python package
+   - `smartorg` terminal command via console entry point
+
 ---
 
 ## 3. 🧱 Architecture (Design & Structure)
@@ -141,6 +155,7 @@ Mover
 - Modular responsibilities per file
 - CLI-first design
 - Structured log-based observability
+- Application-owned infrastructure, independent of user configuration
 
 ### 🧩 Contracts System
 
@@ -206,6 +221,34 @@ This architecture:
 - improves pipeline consistency
 - strengthens type safety
 - separates contract domains without exposing internal organization
+
+## 🛠️ Application Paths & Initialization
+
+All persistent application data is stored under a single
+application-owned directory:
+
+```md
+~/smartorg/
+├── config.yaml
+├── logs/
+│ └── smartorg.log
+└── reports/
+├── executions/
+└── rollbacks/
+```
+This location is centrally defined in `core/paths.py`, which acts
+as the single source of truth for every application-owned path.
+No other module constructs or infers these paths independently.
+
+`smartorg init` creates this structure and a default
+configuration file. It is idempotent: running it against an
+already-initialized installation leaves existing directories and
+configuration untouched.
+
+Every command other than `init` requires an initialized
+application directory. Attempting to run `move`, `report`,
+`rollback`, or `cleanup` before initialization prints guidance
+instead of failing with a filesystem error.
 
 ### 🧹 Cleanup System
 
@@ -290,75 +333,83 @@ independently from runtime configuration loading.
 
 ### 📁 Project Structure
 
-```
-smart-file-organizer/
+```md
+mart-file-organizer/
 │
+├── pyproject.toml
+├── LICENSE
 ├── main.py
 ├── config.yaml
-├── logs/smartlog.log
+├── requirements.txt
 │
-├── cli/parser.py
-│
-├── reports/
-│   ├── executions/
-│   └── rollbacks/
+├── cli/
+│ └── parser.py
 │
 ├── core/
-│   ├── events.py
-│   ├── metadata.py
-│   ├── paths.py
-│   └── contracts/
-│        ├── validation.py
-│        ├── configuration.py
-│        ├── inventory.py
-│        ├── operations.py
-│        ├── recovery.py
-│        └── records.py
+│ ├── events.py
+│ ├── metadata.py
+│ ├── paths.py
+│ └── contracts/
+│ ├── validation.py
+│ ├── configuration.py
+│ ├── inventory.py
+│ ├── operations.py
+│ ├── recovery.py
+│ └── records.py
 │
 ├── handlers/
-│   ├── cleanup.py
-│   ├── move.py
-│   ├── report.py
-│   └── rollback.py
+│ ├── cleanup.py
+│ ├── init.py
+│ ├── move.py
+│ ├── report.py
+│ └── rollback.py
 │
 ├── tasks/
-│   ├── discovery/
-│   │   ├── scanner.py
-│   │   ├── filter.py
-│   │   ├── classifier.py
-│   │   └── coordinator.py
-│   │
-│   ├── execution/
-│   │   ├── planner.py
-│   │   └── mover.py
-│   │
-│   ├── rollback/
-│   │   ├── planner.py
-│   │   ├── executor.py
-│   │   └── coordinator.py
-│   │
-│   ├── cleanup/
-│   │   └── cleaner.py
-│   │
-│   └── reporting/
-│       ├── deserializer.py
-│       ├── generator.py
-│       ├── history.py
-│       ├── loader.py
-│       ├── reporter.py
-│       ├── saver.py
-│       └── storage.py
-│
+│ ├── bootstrap/
+│ │ ├── initializer.py
+│ │ └── verifier.py
+│ │
+│ ├── discovery/
+│ │ ├── scanner.py
+│ │ ├── filter.py
+│ │ ├── classifier.py
+│ │ └── coordinator.py
+│ │
+│ ├── execution/
+│ │ ├── planner.py
+│ │ └── mover.py
+│ │
+│ ├── rollback/
+│ │ ├── planner.py
+│ │ ├── executor.py
+│ │ └── coordinator.py
+│ │
+│ ├── cleanup/
+│ │ └── cleaner.py
+│ │
+│ └── reporting/
+│ ├── deserializer.py
+│ ├── generator.py
+│ ├── history.py
+│ ├── loader.py
+│ ├── reporter.py
+│ ├── saver.py
+│ └── storage.py
 │
 ├── utils/
-│   ├── logger.py
-│   └── config_loader.py
+│ ├── logger.py
+│ └── config_loader.py
 │
-├── README.md
-└── requirements.txt
+└── README.md
 ```
+
+Application-owned runtime data (`config.yaml`, `logs/`, `reports/`)
+is created separately under `~/smartorg/` by `smartorg init` and
+is not part of the project's source tree.
+
 ### 🏛️ Application Architecture
-```
+
+```md
 CLI
     ↓
 Application Handlers
@@ -372,13 +423,36 @@ The application is organized into distinct architectural layers.
 
 - cli/ defines and validates the command-line interface.
 - handlers/ coordinate application workflows.
-- tasks/ implement specialized subsystem behavior.
+- tasks/ implement specialized subsystem behavior, including
+  application bootstrap (tasks/bootstrap/).
 - core/ centralizes shared contracts, events, metadata and application paths.
 - utils/ provides reusable infrastructure services.
 
 This layered architecture keeps orchestration independent from subsystem implementation while maintaining clear ownership boundaries.
 
 ### 🔄 Data Flow
+
+#### init task
+
+```md
+CLI Input
+    │
+    ▼
+cli/parser.py
+    │
+    ▼
+main.py
+    │
+    ▼
+handlers/
+    │
+    ▼
+tasks/bootstrap/
+    │
+    ├── verify initialization state
+    ├── create application directories
+    └── create default configuration
+```
 
 #### move task
 
@@ -404,7 +478,8 @@ tasks/execution/
 tasks/reporting/
 ```
 #### rollback task
-```
+
+```md
 CLI Input
     │
     ▼
@@ -446,7 +521,7 @@ tasks/reporting/
 ```
 
 #### Cleanup task
-```
+```md
 CLI Input
     │
     ▼
@@ -468,15 +543,36 @@ tasks/cleanup/
 
 ---
 
+---
+
 ## 4. 🧰 Usage & Execution
 
 ### ▶️ Command Reference
 
-Run the application from the terminal using one of the available commands:
+Run the application from the terminal using the installed `smartorg` command:
+
+```bash
+smartorg <command> [arguments]
+```
+
+During development, or without installing the package, the
+application can also be run directly:
 
 ```bash
 python3 main.py <command> [arguments]
 ```
+
+#### Init
+
+Initialize the SmartOrg application directory and default
+configuration under `~/smartorg/`.
+
+```bash
+smartorg init
+```
+
+Running `init` against an already-initialized installation is
+safe and leaves existing directories and configuration untouched.
 
 #### Move
 
@@ -484,13 +580,13 @@ Organize the contents of a directory according to the configured
 classification rules.
 
 ```bash
-python3 main.py move /path/to/directory
+smartorg move /path/to/directory
 ```
 
 Example:
 
 ```bash
-python3 main.py move ~/Downloads
+smartorg move ~/Downloads
 ```
 
 **Move (Dry-run)**
@@ -498,13 +594,13 @@ python3 main.py move ~/Downloads
 Simulate the organization process without modifying the filesystem.
 
 ```bash
-python3 main.py move /path/to/directory --dry-run
+smartorg move /path/to/directory --dry-run
 ```
 
 Example:
 
 ```bash
-python3 main.py move ~/Downloads --dry-run
+smartorg move ~/Downloads --dry-run
 ```
 
 #### Rollback
@@ -512,7 +608,7 @@ python3 main.py move ~/Downloads --dry-run
 Restore the latest execution using the most recent execution report.
 
 ```bash
-python3 main.py rollback
+smartorg rollback
 ```
 
 **Rollback (Dry-run)**
@@ -520,7 +616,7 @@ python3 main.py rollback
 Simulate the rollback without modifying the filesystem.
 
 ```bash
-python3 main.py rollback --dry-run
+smartorg rollback --dry-run
 ```
 
 #### Report
@@ -528,27 +624,27 @@ python3 main.py rollback --dry-run
 Display the latest persisted execution report.
 
 ```bash
-python3 main.py report
+smartorg report
 ```
 
 Browse the unified report history.
 
 ```bash
-python3 main.py report list
+smartorg report list
 ```
 
 Filter the report history by workflow.
 
 ```bash
-python3 main.py report list executions
-python3 main.py report list rollbacks
+smartorg report list executions
+smartorg report list rollbacks
 ```
 
 Display a persisted report by history index or identifier.
 
 ```bash
-python3 main.py report 3
-python3 main.py report 20260710T090146
+smartorg report 3
+smartorg report 20260710T090146
 ```
 
 #### Cleanup
@@ -556,28 +652,28 @@ python3 main.py report 20260710T090146
 Delete persisted reports by history index or identifier.
 
 ```bash
-python3 main.py cleanup report 3
-python3 main.py cleanup report 20260710T090146
+smartorg cleanup report 3
+smartorg cleanup report 20260710T090146
 ```
 
 Delete groups of persisted reports.
 
 ```bash
-python3 main.py cleanup report executions
-python3 main.py cleanup report rollbacks
-python3 main.py cleanup report all
+smartorg cleanup report executions
+smartorg cleanup report rollbacks
+smartorg cleanup report all
 ```
 
 Clear the application log.
 
 ```bash
-python3 main.py cleanup log
+smartorg cleanup log
 ```
 
 Remove all persisted reports and application logs.
 
 ```bash
-python3 main.py cleanup all
+smartorg cleanup all
 ```
 
 ### ⚠️ macOS Permissions
@@ -610,16 +706,17 @@ The loader:
 
 Downstream modules never access raw YAML directly.
 
+Configuration is loaded from `~/smartorg/config.yaml`, created by
+`smartorg init`. Application-owned paths (logs, reports) are not
+part of this file — they are defined exclusively in
+`core/paths.py`.
+
 ### Key settings:
 
-- folder_prefix → controls output folder naming  
-- ignore_hidden_files → safe handling of system files  
-- dry_run → default execution mode  
-- categories → file classification rules  
-- reports_directory → root report location
-- execution_reports_directory → execution report storage
-- rollback_reports_directory → rollback report storage
-
+- folder_prefix → controls output folder naming
+- ignore_hidden_files → safe handling of system files
+- dry_run → default execution mode
+- categories → file classification rules
 
 ### Example
 
@@ -648,6 +745,7 @@ Smart File Organizer is a portfolio-grade automation engine demonstrating:
 - Real-world file system automation
 - Scalable contract-driven software architecture
 - End-to-end execution traceability
+- Distributable Python packaging
 
 ### 📌 Development Principles
 
@@ -656,7 +754,8 @@ Smart File Organizer is a portfolio-grade automation engine demonstrating:
 - Controlled execution (dry-run support)
 - Separation of concerns
 - Contract-first architecture
-Observable and deterministic system behavior through structured logs
+- Observable and deterministic system behavior through structured logs
+- Application-owned infrastructure, independent of user configuration
 
 ### 🧭 Roadmap
 
@@ -670,7 +769,7 @@ Version numbers follow the **x.y.z** format:
 
 Versions **v0.4.0** and **v0.5.0** were internal development iterations merged into adjacent releases to maintain a cleaner version history.
 
-#### v0.9.0 — Operational Maturity (latest stable release)
+#### v0.9.0 — Operational Maturity
 * [x] Reporting subsystem
 * [x] Reporting architecture
 * [x] Configuration-driven report persistence
@@ -681,19 +780,20 @@ Versions **v0.4.0** and **v0.5.0** were internal development iterations merged i
 * [x] Report history
 * [x] Report cleanup
 
-#### v1.0.0 — Project Stabilization (currently in development)
+#### v1.0.0 — Project Stabilization (latest stable release)
 
 * [x] Architecture review
 * [x] Cleanup command architecture
 * [x] Handler modularization
 * [x] Contract package modularization
 * [x] Core path centralization
+* [x] Application-owned path relocation (`~/smartorg/`)
+* [x] Application initialization (`smartorg init`)
 * [x] Workflow event taxonomy centralization
 * [x] CLI refinements
 * [x] Manual workflow validation
 * [x] Final code cleanup
-* [ ] Performance optimization
-* [ ] Packaging & distribution
+* [x] Packaging & distribution (`smartorg` terminal command)
 * [ ] Final documentation review
 * [ ] Stable public release
 
@@ -701,7 +801,9 @@ Versions **v0.4.0** and **v0.5.0** were internal development iterations merged i
 
 * [ ] Automated testing infrastructure
 * [ ] Terminal autocompletion
-* [ ] Extended rollback (environment restoration)
+* [ ] Extended rollback (environment restoration, including
+      removal of empty directories created by the original
+      execution)
 * [ ] Graphical user interface (GUI)
 
 
@@ -709,6 +811,8 @@ Versions **v0.4.0** and **v0.5.0** were internal development iterations merged i
 
 - Additional report renderers not yet implemented
 - Rollback currently restores only the latest execution
+- Rollback does not remove directories created by the original
+  execution, even when left empty
 - No plugin-based classification system
 - No AI-assisted file classification
 - CLI only (no graphical interface)
@@ -717,7 +821,7 @@ Versions **v0.4.0** and **v0.5.0** were internal development iterations merged i
 
 ## 7. 📜 Version History
 
-### v1.0.0 (in progress)
+### v1.0.0
 
 - Completed architecture review and responsibility audit
 - Consolidated `main.py` as the application Composition Root
@@ -730,11 +834,18 @@ Versions **v0.4.0** and **v0.5.0** were internal development iterations merged i
 - Modularized the core contracts package
 - Centralized reusable contract validation utilities
 - Centralized static application paths in `core/paths.py`
+- Relocated all application-owned data under `~/smartorg/`
+- Removed report path configuration from `config.yaml` and `AppConfig`
+- Introduced the `tasks/bootstrap` subsystem
+- Introduced the `smartorg init` command (idempotent)
+- Introduced a centralized application-initialization guard in `main.py`
+- Migrated `tasks/reporting/storage.py` from `os.path` to `pathlib`
 - Centralized workflow event taxonomy
 - Removed duplicated logging path constants
 - Removed obsolete subsystem imports
 - Removed obsolete handler implementation
 - Removed obsolete metadata registry
+- Removed dead code (`build_reports_directory`)
 - Added scoped report history filtering
 - Improved CLI consistency and command ergonomics
 - Reviewed configuration loader responsibilities
@@ -746,6 +857,10 @@ Versions **v0.4.0** and **v0.5.0** were internal development iterations merged i
 - Improved source validation in filesystem move execution
 - Standardized rollback runtime failure events
 - Standardized rollback dry-run simulation events
+- Fixed an obsolete report-saving call signature in the move handler
+- Fixed report history construction silently failing due to a
+  `Path`/`str` contract mismatch in `ReportHistoryItem`
+- Added `validate_path_type` to the shared contract validation module
 - Validated missing-source execution behavior
 - Validated prevention of unnecessary destination directory creation
 - Validated rollback missing-source handling
@@ -756,6 +871,7 @@ Versions **v0.4.0** and **v0.5.0** were internal development iterations merged i
 - Validated live execution end-to-end
 - Validated report persistence and loading
 - Validated live rollback end-to-end
+- Validated cleanup workflows (by index, by scope, log, all)
 - Completed project-wide compilation validation
 - Synchronized architecture and Composition Root documentation
 - Completed project-wide performance and memory audit
@@ -767,6 +883,10 @@ Versions **v0.4.0** and **v0.5.0** were internal development iterations merged i
 - Increased log timestamp precision to milliseconds
 - Reviewed configuration loader performance
 - Reviewed application composition-root performance
+- Packaged the project for distribution via `pyproject.toml`
+- Exposed the `smartorg` terminal command
+- Added MIT `LICENSE`
+- Verified installation end-to-end in a clean virtual environment
 
 ### v0.9.0
 

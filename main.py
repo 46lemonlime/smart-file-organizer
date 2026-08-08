@@ -7,6 +7,7 @@ composition root.
 
 Responsibilities:
 - Consume parsed CLI arguments
+- Verify application initialization state
 - Load application configuration
 - Resolve runtime execution values
 - Inject application dependencies
@@ -16,6 +17,8 @@ Responsibilities:
 Architecture Role:
 This file intentionally contains NO logic related to:
 - CLI parser construction
+- application directory creation
+- default configuration generation
 - filesystem discovery
 - file filtering
 - file classification
@@ -38,6 +41,7 @@ Application workflows are delegated to the handlers package.
 
 Application Flow:
 CLI parsing
+→ initialization-state verification
 → configuration loading
 → runtime context construction
 → dependency injection
@@ -45,9 +49,17 @@ CLI parsing
 → application handler
 → subsystem execution
 
+IMPORTANT:
+Every command other than `init` requires an initialized
+application directory. Commands issued before initialization
+are rejected with user-facing guidance instead of routing to
+their handler.
+
 Subsystems:
 - cli:
     Command-line parsing and argument validation
+- bootstrap:
+    Application directory and configuration initialization
 - discovery:
     Filesystem discovery and classification
 - execution:
@@ -74,12 +86,15 @@ Design Principles:
 # -------------------------------------------------
 from handlers import (
     handle_cleanup,
+    handle_init,
     handle_move,
     handle_report,
     handle_rollback,
 )
 
 from cli.parser import parse_args
+
+from tasks.bootstrap import is_app_initialized
 
 from utils.config_loader import get_config
 from utils.logger import log_info
@@ -91,10 +106,7 @@ from core.events import (
 
 from core.metadata import APP_BANNER
 
-from core.paths import (
-    LOG_FILENAME,
-    LOGS_DIRECTORY,
-)
+from core.paths import LOG_FILE_PATH
 
 
 # -------------------------------------------------
@@ -106,6 +118,40 @@ def main() -> None:
     """
 
     args = parse_args()
+
+    # -------------------------------------------------
+    # STARTUP
+    # -------------------------------------------------
+    log_info(
+        f"{APP_START} | "
+        f"banner={APP_BANNER}"
+    )
+
+    task = args.task
+
+    # -------------------------------------------------
+    # INITIALIZATION GUARD
+    # -------------------------------------------------
+    if task != "init" and not is_app_initialized():
+
+        print()
+        print("SmartOrg is not initialized.")
+        print()
+        print("Run:")
+        print()
+        print("    smartorg init")
+        print()
+
+        return
+
+    # -------------------------------------------------
+    # INIT ROUTING
+    # -------------------------------------------------
+    if task == "init":
+
+        handle_init()
+
+        return
 
     # -------------------------------------------------
     # CONFIG
@@ -120,29 +166,9 @@ def main() -> None:
 
     folder_prefix = config.folder_prefix
 
-    reports_directory = config.reports_directory
-
-    execution_reports_directory = (
-        config.execution_reports_directory
-    )
-
-    rollback_reports_directory = (
-        config.rollback_reports_directory
-    )
-
-    # -------------------------------------------------
-    # STARTUP
-    # -------------------------------------------------
-    log_info(
-        f"{APP_START} | "
-        f"banner={APP_BANNER}"
-    )
-
     # -------------------------------------------------
     # EXECUTION CONTEXT
     # -------------------------------------------------
-    task = args.task
-
     path = getattr(
         args,
         "path",
@@ -192,17 +218,12 @@ def main() -> None:
         handle_move(
             path,
             dry_run,
-            folder_prefix,
-            reports_directory,
-            execution_reports_directory
+            folder_prefix
         )
 
     elif task == "report":
 
         handle_report(
-            reports_directory,
-            execution_reports_directory,
-            rollback_reports_directory,
             report_reference,
             report_scope
         )
@@ -210,20 +231,13 @@ def main() -> None:
     elif task == "rollback":
 
         handle_rollback(
-            reports_directory,
-            execution_reports_directory,
-            rollback_reports_directory,
             dry_run
         )
 
     elif task == "cleanup":
 
         handle_cleanup(
-            reports_directory,
-            execution_reports_directory,
-            rollback_reports_directory,
-            LOGS_DIRECTORY,
-            LOG_FILENAME,
+            LOG_FILE_PATH,
             cleanup_resource,
             cleanup_target
         )

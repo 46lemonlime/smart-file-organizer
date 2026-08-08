@@ -27,7 +27,6 @@ latest execution report loading
 
 Design Principles:
 - application-level orchestration
-- explicit dependency injection
 - deterministic workflow coordination
 - subsystem ownership preservation
 - minimal business logic
@@ -46,6 +45,13 @@ It does NOT:
 # -------------------------------------------------
 # IMPORTS
 # -------------------------------------------------
+from core.events import ROLLBACK_COMPLETE
+
+from core.paths import (
+    EXECUTION_REPORTS_DIRECTORY,
+    ROLLBACK_REPORTS_DIRECTORY,
+)
+
 from tasks.reporting.reporter import render_rollback_report
 from tasks.reporting.saver import save_report
 
@@ -53,15 +59,11 @@ from tasks.rollback.coordinator import rollback_latest_execution
 
 from utils.logger import log_info
 
-from core.events import ROLLBACK_COMPLETE
 
 # -------------------------------------------------
 # PUBLIC: Rollback handler
 # -------------------------------------------------
 def handle_rollback(
-    reports_directory: str,
-    execution_reports_directory: str,
-    rollback_reports_directory: str,
     dry_run: bool
 ) -> None:
     """
@@ -80,8 +82,7 @@ def handle_rollback(
     """
 
     rollback_report = rollback_latest_execution(
-        reports_directory,
-        execution_reports_directory,
+        EXECUTION_REPORTS_DIRECTORY,
         dry_run
     )
 
@@ -91,8 +92,7 @@ def handle_rollback(
 
     save_report(
         rollback_report,
-        reports_directory,
-        rollback_reports_directory
+        ROLLBACK_REPORTS_DIRECTORY
     )
 
     render_rollback_report(

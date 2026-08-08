@@ -19,6 +19,10 @@ They intentionally contain NO:
 - pipeline logic
 """
 
+# -------------------------------------------------
+# IMPORTS
+# -------------------------------------------------
+from pathlib import Path
 
 # -------------------------------------------------
 # VALIDATE NON-EMPTY STRING
@@ -126,4 +130,23 @@ def validate_non_negative_int(
 
         raise ValueError(
             f"{field_name} cannot be negative"
+        )
+
+
+# -------------------------------------------------
+# VALIDATE PATH TYPE
+# -------------------------------------------------
+def validate_path_type(
+    value,
+    field_name: str
+):
+    """
+    Validates that a contract field contains a Path instance.
+    """
+
+    if not isinstance(value, Path):
+
+        raise TypeError(
+            f"{field_name} must be Path "
+            f"(received {type(value).__name__})"
         )

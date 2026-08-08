@@ -56,6 +56,11 @@ from core.contracts import (
     RollbackReport,
 )
 
+from core.paths import (
+    EXECUTION_REPORTS_DIRECTORY,
+    ROLLBACK_REPORTS_DIRECTORY,
+)
+
 from core.events import (
     REPORT_COMPLETE,
     REPORT_SKIPPED,
@@ -92,11 +97,8 @@ REPORT_HISTORY_SCOPES = {
 # PUBLIC: Report handler
 # -------------------------------------------------
 def handle_report(
-    reports_directory: str,
-    execution_reports_directory: str,
-    rollback_reports_directory: str,
     reference: str | None,
-    report_scope: str | None
+    report_scope: str | None,
 ) -> None:
     """
     Routes report presentation workflows.
@@ -129,9 +131,6 @@ def handle_report(
     if reference == "list":
 
         _handle_report_list(
-            reports_directory,
-            execution_reports_directory,
-            rollback_reports_directory,
             report_scope
         )
 
@@ -151,9 +150,6 @@ def handle_report(
         return
 
     _handle_report_show(
-        reports_directory,
-        execution_reports_directory,
-        rollback_reports_directory,
         reference
     )
 
@@ -162,10 +158,7 @@ def handle_report(
 # PRIVATE: Handle report list
 # -------------------------------------------------
 def _handle_report_list(
-    reports_directory: str,
-    execution_reports_directory: str,
-    rollback_reports_directory: str,
-    report_scope: str | None
+    report_scope: str | None,
 ) -> None:
     """
     Loads, optionally filters, and renders report history.
@@ -192,16 +185,15 @@ def _handle_report_list(
         return
 
     history_items = list_report_history(
-        reports_directory,
-        execution_reports_directory,
-        rollback_reports_directory
+        EXECUTION_REPORTS_DIRECTORY,
+        ROLLBACK_REPORTS_DIRECTORY,
     )
 
     if report_scope is not None:
 
         history_items = _filter_report_history(
             history_items,
-            report_scope
+            report_scope,
         )
 
     if not history_items:
@@ -236,7 +228,7 @@ def _handle_report_list(
 # -------------------------------------------------
 def _filter_report_history(
     history_items: list[ReportHistoryItem],
-    report_scope: str
+    report_scope: str,
 ) -> list[ReportHistoryItem]:
     """
     Filters unified report history using a supported scope.
@@ -259,10 +251,7 @@ def _filter_report_history(
 # PRIVATE: Handle report presentation
 # -------------------------------------------------
 def _handle_report_show(
-    reports_directory: str,
-    execution_reports_directory: str,
-    rollback_reports_directory: str,
-    reference: str | None
+    reference: str | None,
 ) -> None:
     """
     Loads and renders the latest or selected persisted report.
@@ -271,8 +260,7 @@ def _handle_report_show(
     if reference is None:
 
         report = load_latest_execution_report(
-            reports_directory,
-            execution_reports_directory
+            EXECUTION_REPORTS_DIRECTORY
         )
 
         report_reference = "latest"
@@ -281,9 +269,8 @@ def _handle_report_show(
 
         report = load_report_by_reference(
             reference,
-            reports_directory,
-            execution_reports_directory,
-            rollback_reports_directory
+            EXECUTION_REPORTS_DIRECTORY,
+            ROLLBACK_REPORTS_DIRECTORY,
         )
 
         report_reference = reference

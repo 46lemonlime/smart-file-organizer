@@ -54,9 +54,11 @@ log filename
 → file truncation
 → cleanup result
 
-Configuration:
-Persisted artifact locations are injected by the
-application's composition root.
+Persistence Paths:
+Report artifact locations are obtained from core.paths.
+
+The application log path remains supplied by the cleanup
+workflow.
 
 This module never:
 - reads configuration files
@@ -69,7 +71,7 @@ This module never:
 
 Design Principles:
 - cleanup-only responsibility
-- dependency injection
+- centralized application paths
 - contract-first cleanup boundary
 - deterministic report resolution
 - explicit filesystem validation
@@ -93,6 +95,7 @@ It does NOT:
 # IMPORTS
 # -------------------------------------------------
 import os
+from pathlib import Path
 
 from core.contracts import ReportHistoryItem
 
@@ -101,6 +104,11 @@ from core.events import (
     REPORT_DELETED,
     REPORT_DELETE_FAILED,
     REPORT_NOT_FOUND
+)
+
+from core.paths import (
+    EXECUTION_REPORTS_DIRECTORY,
+    ROLLBACK_REPORTS_DIRECTORY,
 )
 
 from tasks.reporting.history import (
@@ -139,7 +147,7 @@ def _delete_report_file(
 # PRIVATE: Clear log file
 # -------------------------------------------------
 def _clear_log_file(
-    log_path: str
+    log_file_path: Path,
 ) -> None:
     """
     Clears a persisted application log file.
@@ -153,10 +161,9 @@ def _clear_log_file(
     The log path must be validated before calling this helper.
     """
 
-    with open(
-        log_path,
+    with log_file_path.open(
         "w",
-        encoding="utf-8"
+        encoding="utf-8",
     ):
         pass
 
@@ -211,9 +218,6 @@ def _filter_report_history_by_scope(
 # -------------------------------------------------
 def delete_report_by_reference(
     reference: str,
-    reports_directory: str,
-    execution_reports_directory: str,
-    rollback_reports_directory: str
 ) -> ReportHistoryItem | None:
     """
     Deletes a persisted report by history index or identifier.
@@ -251,9 +255,8 @@ def delete_report_by_reference(
         # -------------------------------------------------
         history_item = find_report_history_item(
             reference,
-            reports_directory,
-            execution_reports_directory,
-            rollback_reports_directory
+            EXECUTION_REPORTS_DIRECTORY,
+            ROLLBACK_REPORTS_DIRECTORY
         )
 
         if history_item is None:
@@ -320,9 +323,6 @@ def delete_report_by_reference(
 # -------------------------------------------------
 def delete_reports_by_scope(
     scope: str,
-    reports_directory: str,
-    execution_reports_directory: str,
-    rollback_reports_directory: str
 ) -> list[ReportHistoryItem]:
     """
     Deletes persisted reports using a report history scope.
@@ -358,9 +358,8 @@ def delete_reports_by_scope(
     # STEP 1: LOAD UNIFIED REPORT HISTORY
     # -------------------------------------------------
     history_items = list_report_history(
-        reports_directory,
-        execution_reports_directory,
-        rollback_reports_directory
+        EXECUTION_REPORTS_DIRECTORY,
+        ROLLBACK_REPORTS_DIRECTORY
     )
 
     # -------------------------------------------------
@@ -442,8 +441,7 @@ def delete_reports_by_scope(
 # PUBLIC: Clear application logs
 # -------------------------------------------------
 def clear_application_logs(
-    logs_directory: str,
-    log_filename: str
+    log_file_path: Path,
 ) -> bool:
     """
     Clears the persisted application log file.
@@ -461,28 +459,23 @@ def clear_application_logs(
     the same path without requiring file recreation.
     """
 
-    log_path = os.path.join(
-        logs_directory,
-        log_filename
-    )
-
     try:
 
         log_info(
             f"{REPORT_DELETE_START} | "
             f"artifact_type=logs "
-            f"path={log_path}"
+            f"path={log_file_path}"
         )
 
         # -------------------------------------------------
         # STEP 1: VALIDATE LOG FILE
         # -------------------------------------------------
-        if not os.path.isfile(log_path):
+        if not log_file_path.is_file():
 
             log_warning(
                 f"{REPORT_NOT_FOUND} | "
                 f"artifact_type=logs "
-                f"path={log_path} "
+                f"path={log_file_path} "
                 f"reason=log_file_missing"
             )
 
@@ -492,7 +485,7 @@ def clear_application_logs(
         # STEP 2: CLEAR LOG FILE
         # -------------------------------------------------
         _clear_log_file(
-            log_path
+            log_file_path
         )
 
         # This event is written after truncation and may become
@@ -500,18 +493,18 @@ def clear_application_logs(
         log_info(
             f"{REPORT_DELETED} | "
             f"artifact_type=logs "
-            f"path={log_path}"
+            f"path={log_file_path}"
         )
 
         return True
 
-    except Exception as e:
+    except Exception as error:
 
         log_error(
             f"{REPORT_DELETE_FAILED} | "
             f"artifact_type=logs "
-            f"path={log_path}",
-            error=e
+            f"path={log_file_path}",
+            error=error,
         )
 
         raise

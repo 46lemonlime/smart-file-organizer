@@ -32,10 +32,8 @@ These contracts contain NO:
 Reporting behavior is implemented by the reporting subsystem.
 """
 
-# -------------------------------------------------
-# IMPORTS
-# -------------------------------------------------
 from dataclasses import dataclass
+from pathlib import Path
 
 from .inventory import DiscoverySkippedItem
 from .operations import (
@@ -48,6 +46,7 @@ from .validation import (
     validate_list_type,
     validate_non_empty_string,
     validate_non_negative_int,
+    validate_path_type,
 )
 
 
@@ -429,7 +428,7 @@ class ReportHistoryItem:
     - index is a non-negative integer
     - report_id is a non-empty string
     - report_type is a non-empty string
-    - path is a non-empty string
+    - path is a Path instance
     - dry_run is boolean
     - totals are non-negative integers
 
@@ -441,7 +440,7 @@ class ReportHistoryItem:
     index: int
     report_id: str
     report_type: str
-    path: str
+    path: Path
     dry_run: bool
     total_processed: int
     total_skipped: int
@@ -464,7 +463,7 @@ class ReportHistoryItem:
             "report_type"
         )
 
-        validate_non_empty_string(
+        validate_path_type(
             self.path,
             "path"
         )

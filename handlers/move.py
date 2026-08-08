@@ -56,6 +56,8 @@ from core.events import (
     PLAN_READY,
 )
 
+from core.paths import EXECUTION_REPORTS_DIRECTORY
+
 from tasks.discovery.coordinator import discover_files
 
 from tasks.execution.mover import move_files
@@ -79,9 +81,7 @@ from utils.logger import log_error, log_info
 def handle_move(
     path: str,
     dry_run: bool,
-    folder_prefix: str,
-    reports_directory: str,
-    execution_reports_directory: str
+    folder_prefix: str
 ) -> None:
     """
     Executes the complete file organization workflow.
@@ -172,8 +172,7 @@ def handle_move(
     # -------------------------------------------------
     save_report(
         execution_report,
-        reports_directory,
-        execution_reports_directory
+        EXECUTION_REPORTS_DIRECTORY
     )
 
     # -------------------------------------------------

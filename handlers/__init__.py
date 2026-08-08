@@ -23,6 +23,7 @@ Example:
 
     from handlers import (
         handle_cleanup,
+        handle_init,
         handle_move,
         handle_report,
         handle_rollback,
@@ -30,6 +31,7 @@ Example:
 """
 
 from .cleanup import handle_cleanup
+from .init import handle_init
 from .move import handle_move
 from .report import handle_report
 from .rollback import handle_rollback
